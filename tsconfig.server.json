@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "es2020",
+    "outDir": "./dist",
+    "rootDir": "./server",
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "declaration": false,
+    "removeComments": true
+  },
+  "include": ["server/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

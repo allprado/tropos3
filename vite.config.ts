@@ -6,14 +6,22 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: true,
-    port: 5173,
+    port: 5178,
     // Aumentar o timeout para evitar erros 504
     timeout: 120000,
     // Configurar HMR para GitHub Codespaces
     hmr: {
-      port: 5173,
+      port: 5178,
       clientPort: 443,
       protocol: 'wss'
+    },
+    // Proxy para API do backend
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false
+      }
     }
   },
   optimizeDeps: {

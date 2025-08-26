@@ -464,6 +464,22 @@ Output:Variable, *, Zone Mean Radiant Temperature, hourly, ;
 Output:Variable, *, Zone Air Relative Humidity, hourly, ;
 Output:Variable, *, Site Outdoor Air Drybulb Temperature, hourly;
 
+! Configurações de tabelas e relatórios
+Output:Table:SummaryReports,
+  AllSummary;                                    !- Report Name 1
+
+Output:Table:Monthly,
+  Zone Temperatures,                             !- Name
+  2,                                             !- Digits After Decimal
+  Zone Mean Air Temperature,                     !- Variable or Meter Name 1
+  SumOrAverage,                                  !- Aggregation Type for Variable or Meter 1
+  Zone Mean Radiant Temperature,                 !- Variable or Meter Name 2
+  SumOrAverage;                                  !- Aggregation Type for Variable or Meter 2
+
+! Configurações de formatação de saída
+OutputControl:Table:Style,
+  HTML;                                          !- Column Separator
+
 Output:Surfaces:Drawing, DXF, Triangulate3DFace;
 OutputControl:ReportingTolerances,1.11,1.11;
 `;

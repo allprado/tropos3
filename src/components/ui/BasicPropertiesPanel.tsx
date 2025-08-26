@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { useStore } from '../../store-simple';
+import SimulationResults from './SimulationResults';
 import { 
   BiCube, 
   BiLayer, 
@@ -159,7 +160,7 @@ const BasicPropertiesPanel = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.name.endsWith('.epw')) {
-      setBuildingEpwFile(file.name);
+      setBuildingEpwFile(file); // Armazenar o arquivo completo, não apenas o nome
       
       // Ler o arquivo EPW para extrair dados de localização
       const reader = new FileReader();
@@ -335,7 +336,7 @@ const BasicPropertiesPanel = () => {
                     color: '#28a745', 
                     marginTop: '0.3rem' 
                   }}>
-                    📁 {building.epwFile}
+                    📁 {building.epwFile.name}
                   </div>
                 )}
               </div>
@@ -811,6 +812,15 @@ const BasicPropertiesPanel = () => {
           )}
         </PropertyGroup>
       )}
+
+      {/* Resultados da Simulação */}
+      <PropertyGroup>
+        <GroupTitle>
+          <BiBuilding />
+          Resultados da Simulação
+        </GroupTitle>
+        <SimulationResults />
+      </PropertyGroup>
     </PanelContainer>
   );
 };

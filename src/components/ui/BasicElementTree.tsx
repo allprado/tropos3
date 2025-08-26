@@ -33,14 +33,14 @@ const TreeList = styled.ul`
 `;
 
 interface TreeItemProps {
-  isSelected: boolean;
+  $isSelected: boolean;
 }
 
 const TreeItem = styled.li<TreeItemProps>`
   padding: 0.3rem 0;
   font-size: 0.9rem;
-  color: ${props => props.isSelected ? '#ff8c00' : '#555'};
-  font-weight: ${props => props.isSelected ? '600' : 'normal'};
+  color: ${props => props.$isSelected ? '#ff8c00' : '#555'};
+  font-weight: ${props => props.$isSelected ? '600' : 'normal'};
   cursor: pointer;
   border-radius: 4px;
   padding-left: 0.5rem;
@@ -50,7 +50,7 @@ const TreeItem = styled.li<TreeItemProps>`
     color: #ff8c00;
   }
   
-  ${props => props.isSelected && `
+  ${props => props.$isSelected && `
     background-color: #fff3e0;
     color: #ff8c00;
     border-left: 3px solid #ff8c00;
@@ -119,7 +119,7 @@ const BasicElementTree = () => {
       <TreeList>
         {/* Edifício */}
         <TreeItem 
-          isSelected={isSelected('building', 'main-building')} 
+          $isSelected={isSelected('building', 'main-building')} 
           onClick={() => {}}
         >
           <TreeItemContent
@@ -140,7 +140,7 @@ const BasicElementTree = () => {
             <TreeItemChildren>
               {/* Zona */}
               <TreeItem 
-                isSelected={isSelected('zone', 'default-zone')} 
+                $isSelected={isSelected('zone', 'default-zone')} 
                 onClick={() => {}}
               >
                 <TreeItemContent
@@ -160,7 +160,7 @@ const BasicElementTree = () => {
                 {expandedItems['default-zone'] && (
                   <TreeItemChildren>
                     <TreeItem 
-                      isSelected={isSelected('surface', 'floor')} 
+                      $isSelected={isSelected('surface', 'floor')} 
                       onClick={() => {}}
                     >
                       <TreeItemContent
@@ -175,7 +175,7 @@ const BasicElementTree = () => {
                     </TreeItem>
                     
                     <TreeItem 
-                      isSelected={isSelected('surface', 'ceiling')} 
+                      $isSelected={isSelected('surface', 'ceiling')} 
                       onClick={() => {}}
                     >
                       <TreeItemContent
@@ -199,7 +199,7 @@ const BasicElementTree = () => {
                       return (
                         <TreeItem 
                           key={wallId}
-                          isSelected={isSelected('wall', wallId)} 
+                          $isSelected={isSelected('wall', wallId)} 
                           onClick={() => {}}
                         >
                           <TreeItemContent
@@ -219,7 +219,7 @@ const BasicElementTree = () => {
                           {expandedItems[wallId] && (
                             <TreeItemChildren>
                               <TreeItem 
-                                isSelected={isSelected('window', windowId)} 
+                                $isSelected={isSelected('window', windowId)} 
                                 onClick={() => {}}
                               >
                                 <TreeItemContent

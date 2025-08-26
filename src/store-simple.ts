@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { generateIdf, parseEpwLocation } from './services/idfGenerator';
+import { generateIdf } from './services/idfGenerator';
+import { energyPlusService, type SimulationResult } from './services/energyPlusService';
 import type { LocationData } from './types';
 
 interface Element {
@@ -42,7 +43,7 @@ interface Materials {
 
 interface Building {
   name: string;
-  epwFile: string | null;
+  epwFile: File | null;
   locationData: LocationData | null;
 }
 
@@ -63,6 +64,11 @@ interface Store {
   building: Building;
   zone: Zone;
   
+  // Estado da simulação
+  currentSimulation: SimulationResult | null;
+  simulationHistory: SimulationResult[];
+  isSimulating: boolean;
+  
   // Ações
   setSelectedElement: (element: Element | null) => void;
   setDimensions: (dimensions: Dimensions) => void;
@@ -72,17 +78,22 @@ interface Store {
   setNorthAngle: (angle: number) => void;
   setMaterials: (materials: Materials) => void;
   setBuildingName: (name: string) => void;
-  setBuildingEpwFile: (file: string | null) => void;
+  setBuildingEpwFile: (file: File | null) => void;
   setBuildingLocationData: (locationData: LocationData | null) => void;
   setZoneName: (name: string) => void;
   setZoneConditioned: (conditioned: boolean) => void;
+  
+  // Ações de simulação
+  setCurrentSimulation: (simulation: SimulationResult | null) => void;
+  addToSimulationHistory: (simulation: SimulationResult) => void;
+  setIsSimulating: (isSimulating: boolean) => void;
   
   // Funções de utilidade
   resetModel: () => void;
   exportToJson: () => void;
   importFromJson: (data: any) => void;
   exportToIdf: () => void;
-  runSimulation: () => void;
+  runSimulation: () => Promise<void>;
 }
 
 // Estado inicial
@@ -143,6 +154,11 @@ export const useStore = create<Store>((set, get) => ({
   building: initialBuilding,
   zone: initialZone,
   
+  // Estado da simulação
+  currentSimulation: null,
+  simulationHistory: [],
+  isSimulating: false,
+  
   // Ações
   setSelectedElement: (element) => set({ selectedElement: element }),
   setDimensions: (dimensions) => set({ dimensions }),
@@ -162,6 +178,13 @@ export const useStore = create<Store>((set, get) => ({
   setBuildingLocationData: (locationData) => set({ building: { ...get().building, locationData } }),
   setZoneName: (name) => set({ zone: { ...get().zone, name } }),
   setZoneConditioned: (conditioned) => set({ zone: { ...get().zone, conditioned } }),
+  
+  // Ações de simulação
+  setCurrentSimulation: (simulation) => set({ currentSimulation: simulation }),
+  addToSimulationHistory: (simulation) => set({ 
+    simulationHistory: [simulation, ...get().simulationHistory.slice(0, 9)] // Manter apenas 10 últimas
+  }),
+  setIsSimulating: (isSimulating) => set({ isSimulating }),
   
   // Funções de utilidade
   resetModel: () => set({ 
@@ -224,7 +247,69 @@ export const useStore = create<Store>((set, get) => ({
   },
   
   runSimulation: async () => {
-    alert('Simulação iniciada! (Funcionalidade em desenvolvimento)');
+    const state = get();
+    const { dimensions, northAngle, materials, building, windowDimensions } = state;
+    
+    try {
+      // Verificar se o servidor está disponível
+      state.setIsSimulating(true);
+      
+      try {
+        await energyPlusService.checkHealth();
+      } catch (error) {
+        state.setIsSimulating(false);
+        alert('Servidor EnergyPlus não está disponível. Verifique se o servidor backend está rodando na porta 3001.');
+        return;
+      }
+
+      // Gerar conteúdo IDF
+      const idfContent = generateIdf(dimensions, northAngle, materials, windowDimensions, building.locationData || undefined);
+      
+      // Preparar arquivo EPW se disponível
+      let epwFile: File | undefined;
+      if (building.epwFile) {
+        // Usar o arquivo EPW carregado pelo usuário
+        epwFile = building.epwFile;
+        console.log('📁 Usando arquivo EPW do usuário:', epwFile.name);
+      } else {
+        console.warn('⚠️ Nenhum arquivo EPW fornecido pelo usuário');
+      }
+
+      // Iniciar simulação
+      console.log('Iniciando simulação EnergyPlus...');
+      const response = await energyPlusService.startSimulation({
+        idfContent,
+        epwFile
+      });
+
+      console.log('Simulação iniciada:', response);
+
+      // Monitorar progresso da simulação
+      const result = await energyPlusService.monitorSimulation(
+        response.simulationId,
+        (simulationUpdate) => {
+          state.setCurrentSimulation(simulationUpdate);
+          console.log('Status da simulação:', simulationUpdate.status);
+        }
+      );
+
+      // Simulação finalizada
+      state.setCurrentSimulation(result);
+      state.addToSimulationHistory(result);
+
+      if (result.status === 'completed') {
+        alert('✅ Simulação concluída com sucesso! Verifique o painel de resultados.');
+      } else if (result.status === 'error') {
+        const errorMsg = result.errors?.join('\n') || 'Erro desconhecido';
+        alert(`❌ Erro na simulação:\n${errorMsg}`);
+      }
+
+    } catch (error) {
+      console.error('Erro ao executar simulação:', error);
+      alert(`Erro ao executar simulação: ${error}`);
+    } finally {
+      state.setIsSimulating(false);
+    }
   }
 }));
 

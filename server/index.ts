@@ -1,0 +1,444 @@
+import express from 'express';
+import cors from 'cors';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs-extra';
+import { spawn } from 'child_process';
+import { v4 as uuidv4 } from 'uuid';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+const PORT = Number(process.env.PORT) || 3001;
+
+// Configuração CORS
+app.use(cors({
+  origin: true, // Permitir qualquer origem durante desenvolvimento
+  credentials: true
+}));
+
+app.use(express.json());
+app.use(express.static('public'));
+
+// Configuração do multer para upload de arquivos
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../temp/uploads');
+    fs.ensureDirSync(uploadDir);
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage });
+
+// Diretórios de trabalho
+const TEMP_DIR = path.join(__dirname, '../temp');
+const SIMULATIONS_DIR = path.join(TEMP_DIR, 'simulations');
+const ENERGYPLUS_PATH = '/usr/local/EnergyPlus-8-9-0/energyplus-8.9.0';
+
+// Garantir que os diretórios existam
+fs.ensureDirSync(TEMP_DIR);
+fs.ensureDirSync(SIMULATIONS_DIR);
+
+// Interface para resultado da simulação
+interface SimulationResult {
+  id: string;
+  status: 'running' | 'completed' | 'error' | 'queued';
+  startTime: Date;
+  endTime?: Date;
+  idfContent?: string;
+  epwFile?: string;
+  outputs?: {
+    err?: string;
+    eso?: string;
+    csv?: string;
+    html?: string;
+    svg?: string;
+  };
+  errors?: string[];
+  warnings?: string[];
+  logs?: string[];
+}
+
+// Store das simulações em memória (em produção, usar banco de dados)
+const simulations = new Map<string, SimulationResult>();
+
+// Endpoint de health check
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    energyplus: fs.existsSync(ENERGYPLUS_PATH),
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Endpoint para executar simulação
+app.post('/api/simulate', upload.single('epwFile'), async (req, res) => {
+  try {
+    const { idfContent } = req.body;
+    const epwFile = req.file;
+
+    if (!idfContent) {
+      return res.status(400).json({ error: 'Conteúdo IDF é obrigatório' });
+    }
+
+    // Gerar ID único para a simulação
+    const simulationId = uuidv4();
+    const simulationDir = path.join(SIMULATIONS_DIR, simulationId);
+    
+    // Criar diretório da simulação
+    await fs.ensureDir(simulationDir);
+
+    // Salvar arquivo IDF
+    const idfPath = path.join(simulationDir, 'input.idf');
+    await fs.writeFile(idfPath, idfContent);
+
+    // Copiar arquivo EPW se fornecido
+    let epwPath = '';
+    if (epwFile) {
+      epwPath = path.join(simulationDir, 'weather.epw');
+      await fs.copy(epwFile.path, epwPath);
+      // Limpar arquivo temporário
+      await fs.remove(epwFile.path);
+    }
+
+    // Criar entrada na store de simulações
+    const simulation: SimulationResult = {
+      id: simulationId,
+      status: 'queued',
+      startTime: new Date(),
+      idfContent,
+      epwFile: epwFile?.originalname
+    };
+
+    simulations.set(simulationId, simulation);
+
+    // Executar simulação de forma assíncrona
+    runEnergyPlusSimulation(simulationId, idfPath, epwPath, simulationDir);
+
+    res.json({
+      simulationId,
+      status: 'queued',
+      message: 'Simulação iniciada'
+    });
+
+  } catch (error) {
+    console.error('Erro ao iniciar simulação:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Endpoint para verificar status da simulação
+app.get('/api/simulation/:id', (req, res) => {
+  const { id } = req.params;
+  const simulation = simulations.get(id);
+
+  if (!simulation) {
+    return res.status(404).json({ error: 'Simulação não encontrada' });
+  }
+
+  res.json(simulation);
+});
+
+// Endpoint para listar simulações
+app.get('/api/simulations', (req, res) => {
+  const simulationList = Array.from(simulations.values())
+    .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+  
+  res.json(simulationList);
+});
+
+// Endpoint para baixar arquivos de saída
+app.get('/api/simulation/:id/download/:file', (req, res) => {
+  const { id, file } = req.params;
+  const simulation = simulations.get(id);
+
+  if (!simulation) {
+    return res.status(404).json({ error: 'Simulação não encontrada' });
+  }
+
+  const simulationDir = path.join(SIMULATIONS_DIR, id);
+  const allowedFiles = [
+    'eplusoutout.err', 
+    'eplusoutout.eso', 
+    'eplusoutout.csv', 
+    'eplustblout.htm',
+    'eplusoutout.htm',
+    'eplusoutout.svg'
+  ];
+  
+  if (!allowedFiles.includes(file)) {
+    return res.status(400).json({ error: 'Arquivo não permitido' });
+  }
+
+  const filePath = path.join(simulationDir, file);
+  
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'Arquivo não encontrado' });
+  }
+
+  res.download(filePath);
+});
+
+// Endpoint temporário para reprocessar outputs de simulações existentes
+app.post('/api/refresh-outputs', async (req, res) => {
+  console.log('🔄 Reprocessando outputs de simulações existentes...');
+  
+  for (const [id, simulation] of simulations.entries()) {
+    if (simulation.status === 'completed') {
+      const outputDir = path.join(SIMULATIONS_DIR, id);
+      const outputs: any = {};
+      
+      try {
+        const errFile = path.join(outputDir, 'eplusoutout.err');
+        if (fs.existsSync(errFile)) {
+          outputs.err = await fs.readFile(errFile, 'utf-8');
+        }
+
+        const csvFile = path.join(outputDir, 'eplusoutout.csv');
+        if (fs.existsSync(csvFile)) {
+          outputs.csv = await fs.readFile(csvFile, 'utf-8');
+        }
+
+        const htmlFile = path.join(outputDir, 'eplustblout.htm');
+        if (fs.existsSync(htmlFile)) {
+          outputs.html = await fs.readFile(htmlFile, 'utf-8');
+        }
+
+        const htmlFile2 = path.join(outputDir, 'eplusoutout.htm');
+        if (fs.existsSync(htmlFile2)) {
+          outputs.html = await fs.readFile(htmlFile2, 'utf-8');
+        }
+
+        simulation.outputs = outputs;
+        simulations.set(id, simulation);
+        
+        console.log(`✅ Outputs atualizados para simulação ${id}: ${Object.keys(outputs).join(', ')}`);
+        
+      } catch (error) {
+        console.error(`❌ Erro ao processar outputs para ${id}:`, error);
+      }
+    }
+  }
+  
+  res.json({ message: 'Outputs reprocessados', count: simulations.size });
+});
+
+// Função para executar o EnergyPlus
+async function runEnergyPlusSimulation(
+  simulationId: string, 
+  idfPath: string, 
+  epwPath: string, 
+  outputDir: string
+) {
+  const simulation = simulations.get(simulationId);
+  if (!simulation) return;
+
+  try {
+    simulation.status = 'running';
+    simulations.set(simulationId, simulation);
+
+    const args = [
+      '--weather', epwPath || '',
+      '--output-directory', outputDir,
+      '--output-prefix', 'eplusout',
+      '--output-suffix', 'L',
+      '--expandobjects',
+      idfPath
+    ].filter(arg => arg !== ''); // Remove argumentos vazios
+
+    console.log(`Executando EnergyPlus para simulação ${simulationId}`);
+    console.log(`📂 IDF Path: ${idfPath}`);
+    console.log(`🌡️ EPW Path: ${epwPath}`);
+    console.log(`📁 Output Dir: ${outputDir}`);
+    console.log(`🔧 Comando: ${ENERGYPLUS_PATH} ${args.join(' ')}`);
+    console.log(`📋 Args detalhados:`, args);
+
+    const energyplus = spawn(ENERGYPLUS_PATH, args, {
+      cwd: outputDir,
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    energyplus.stdout.on('data', (data) => {
+      const output = data.toString();
+      stdout += output;
+      console.log(`📤 STDOUT: ${output.trim()}`);
+    });
+
+    energyplus.stderr.on('data', (data) => {
+      const output = data.toString();
+      stderr += output;
+      console.log(`📤 STDERR: ${output.trim()}`);
+    });
+
+    energyplus.on('close', async (code) => {
+      simulation.endTime = new Date();
+      
+      console.log(`🏁 EnergyPlus finalizou com código: ${code}`);
+      console.log(`📤 STDOUT completo: ${stdout}`);
+      console.log(`📤 STDERR completo: ${stderr}`);
+      
+      if (code === 0) {
+        simulation.status = 'completed';
+        
+        // Executar ReadVarsESO para converter .eso em .csv
+        try {
+          const readvarsPath = path.join(path.dirname(ENERGYPLUS_PATH), 'PostProcess', 'ReadVarsESO');
+          const esoFile = path.join(outputDir, 'eplusoutout.eso');
+          
+          if (fs.existsSync(esoFile)) {
+            console.log(`🔄 Executando ReadVarsESO para converter ${esoFile}`);
+            
+            // ReadVarsESO espera um arquivo chamado eplusout.eso
+            const expectedEsoFile = path.join(outputDir, 'eplusout.eso');
+            await fs.copy(esoFile, expectedEsoFile);
+            
+            const readvarsProccess = spawn(readvarsPath, [], {
+              cwd: outputDir,
+              stdio: ['pipe', 'pipe', 'pipe']
+            });
+
+            // Enviar o nome do arquivo via stdin
+            readvarsProccess.stdin.write('eplusout.eso\n');
+            readvarsProccess.stdin.end();
+
+            await new Promise<void>((resolve, reject) => {
+              let readvarsStdout = '';
+              let readvarsStderr = '';
+
+              readvarsProccess.stdout.on('data', (data) => {
+                readvarsStdout += data.toString();
+              });
+
+              readvarsProccess.stderr.on('data', (data) => {
+                readvarsStderr += data.toString();
+              });
+
+              readvarsProccess.on('close', async (readvarsCode) => {
+                console.log(`🔄 ReadVarsESO finalizou com código: ${readvarsCode}`);
+                console.log(`📤 ReadVars STDOUT: ${readvarsStdout}`);
+                console.log(`📤 ReadVars STDERR: ${readvarsStderr}`);
+                
+                // Copiar o arquivo CSV gerado de volta para o nome esperado
+                const generatedCsv = path.join(outputDir, 'eplusout.csv');
+                const expectedCsv = path.join(outputDir, 'eplusoutout.csv');
+                if (fs.existsSync(generatedCsv)) {
+                  console.log(`📋 Copiando ${generatedCsv} para ${expectedCsv}`);
+                  await fs.copy(generatedCsv, expectedCsv);
+                  console.log(`✅ Arquivo CSV copiado com sucesso`);
+                } else {
+                  console.log(`⚠️ Arquivo CSV não encontrado: ${generatedCsv}`);
+                }
+                
+                resolve();
+              });
+
+              readvarsProccess.on('error', (error) => {
+                console.log(`⚠️ Erro ao executar ReadVarsESO: ${error.message}`);
+                resolve(); // Continue mesmo se ReadVars falhar
+              });
+            });
+          }
+        } catch (readvarsError) {
+          console.log(`⚠️ Erro no pós-processamento ReadVarsESO: ${readvarsError}`);
+        }
+        
+        // Ler arquivos de saída
+        const outputs: any = {};
+        
+        try {
+          const errFile = path.join(outputDir, 'eplusoutout.err');
+          if (fs.existsSync(errFile)) {
+            outputs.err = await fs.readFile(errFile, 'utf-8');
+          }
+
+          const csvFile = path.join(outputDir, 'eplusoutout.csv');
+          if (fs.existsSync(csvFile)) {
+            outputs.csv = await fs.readFile(csvFile, 'utf-8');
+          }
+
+          const htmlFile = path.join(outputDir, 'eplustblout.htm');
+          if (fs.existsSync(htmlFile)) {
+            outputs.html = await fs.readFile(htmlFile, 'utf-8');
+          }
+
+          // Verificar também o arquivo HTML alternativo
+          const htmlFile2 = path.join(outputDir, 'eplusoutout.htm');
+          if (fs.existsSync(htmlFile2)) {
+            outputs.html = await fs.readFile(htmlFile2, 'utf-8');
+          }
+
+          simulation.outputs = outputs;
+
+          // Extrair erros e warnings do arquivo .err
+          if (outputs.err) {
+            const lines = outputs.err.split('\n');
+            simulation.errors = lines.filter((line: string) => 
+              line.includes('** Severe') || line.includes('** Fatal')
+            );
+            simulation.warnings = lines.filter((line: string) => 
+              line.includes('** Warning')
+            );
+          }
+
+        } catch (readError) {
+          console.error('Erro ao ler arquivos de saída:', readError);
+        }
+
+      } else {
+        simulation.status = 'error';
+        simulation.errors = [
+          `EnergyPlus terminou com código de saída ${code}`,
+          stderr || 'Erro desconhecido'
+        ];
+      }
+
+      simulation.logs = [
+        `Stdout: ${stdout}`,
+        `Stderr: ${stderr}`,
+        `Código de saída: ${code}`
+      ];
+
+      simulations.set(simulationId, simulation);
+      
+      console.log(`Simulação ${simulationId} finalizada com status: ${simulation.status}`);
+    });
+
+    energyplus.on('error', (error) => {
+      simulation.status = 'error';
+      simulation.endTime = new Date();
+      simulation.errors = [`Erro ao executar EnergyPlus: ${error.message}`];
+      simulations.set(simulationId, simulation);
+      
+      console.error(`Erro na simulação ${simulationId}:`, error);
+    });
+
+  } catch (error) {
+    simulation.status = 'error';
+    simulation.endTime = new Date();
+    simulation.errors = [`Erro interno: ${error}`];
+    simulations.set(simulationId, simulation);
+    
+    console.error(`Erro interno na simulação ${simulationId}:`, error);
+  }
+}
+
+// Iniciar servidor
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor EnergyPlus rodando na porta ${PORT}`);
+  console.log(`📊 EnergyPlus Path: ${ENERGYPLUS_PATH}`);
+  console.log(`📁 Diretório de simulações: ${SIMULATIONS_DIR}`);
+  console.log(`✅ EnergyPlus disponível: ${fs.existsSync(ENERGYPLUS_PATH)}`);
+  console.log(`🌐 Ouvindo em: 0.0.0.0:${PORT}`);
+});
+
+export default app;

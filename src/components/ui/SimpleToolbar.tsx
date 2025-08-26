@@ -36,7 +36,7 @@ const ButtonGroup = styled.div`
 `;
 
 interface ToolButtonProps {
-  primary?: boolean;
+  $primary?: boolean;
 }
 
 const ToolButton = styled.button<ToolButtonProps>`
@@ -46,14 +46,14 @@ const ToolButton = styled.button<ToolButtonProps>`
   padding: 0.5rem 0.8rem;
   border: none;
   border-radius: 4px;
-  background-color: ${props => props.primary ? '#4a87b9' : '#f0f0f0'};
-  color: ${props => props.primary ? '#fff' : '#333'};
+  background-color: ${props => props.$primary ? '#4a87b9' : '#f0f0f0'};
+  color: ${props => props.$primary ? '#fff' : '#333'};
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s ease;
   
   &:hover {
-    background-color: ${props => props.primary ? '#3a77a9' : '#e0e0e0'};
+    background-color: ${props => props.$primary ? '#3a77a9' : '#e0e0e0'};
   }
   
   &:focus {
@@ -125,7 +125,7 @@ const SimpleToolbar = () => {
           IDF
         </ToolButton>
         
-        <ToolButton primary onClick={runSimulation} title="Executar Simulação">
+        <ToolButton $primary onClick={runSimulation} title="Executar Simulação">
           <BiRun />
           Simular
         </ToolButton>
