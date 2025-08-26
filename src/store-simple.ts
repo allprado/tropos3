@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { generateIdf, parseEpwLocation } from './services/idfGenerator';
+import type { LocationData } from './types';
 
 interface Element {
   type: 'building' | 'zone' | 'wall' | 'window' | 'surface';
@@ -16,6 +18,14 @@ interface WindowDimensions {
   width: number;
   height: number;
   sillHeight: number;
+  enabled: boolean; // Para habilitar/desabilitar janela
+}
+
+interface OverhangProperties {
+  enabled: boolean;
+  depth: number; // Profundidade do overhang (para fora da parede)
+  extensionLeft: number; // Extensão lateral esquerda
+  extensionRight: number; // Extensão lateral direita
 }
 
 interface SurfaceProperties {
@@ -33,6 +43,7 @@ interface Materials {
 interface Building {
   name: string;
   epwFile: string | null;
+  locationData: LocationData | null;
 }
 
 interface Zone {
@@ -45,6 +56,7 @@ interface Store {
   selectedElement: Element | null;
   dimensions: Dimensions;
   windowDimensions: Record<string, WindowDimensions>;
+  overhangProperties: Record<string, OverhangProperties>;
   surfaceProperties: Record<string, SurfaceProperties>;
   northAngle: number;
   materials: Materials;
@@ -55,11 +67,13 @@ interface Store {
   setSelectedElement: (element: Element | null) => void;
   setDimensions: (dimensions: Dimensions) => void;
   setWindowDimensions: (windowId: string, dimensions: WindowDimensions) => void;
+  setOverhangProperties: (windowId: string, properties: OverhangProperties) => void;
   setSurfaceProperties: (surfaceId: string, properties: SurfaceProperties) => void;
   setNorthAngle: (angle: number) => void;
   setMaterials: (materials: Materials) => void;
   setBuildingName: (name: string) => void;
   setBuildingEpwFile: (file: string | null) => void;
+  setBuildingLocationData: (locationData: LocationData | null) => void;
   setZoneName: (name: string) => void;
   setZoneConditioned: (conditioned: boolean) => void;
   
@@ -86,7 +100,8 @@ const initialMaterials = {
 
 const initialBuilding = {
   name: 'Novo Edifício',
-  epwFile: null
+  epwFile: null,
+  locationData: null
 };
 
 const initialZone = {
@@ -95,10 +110,17 @@ const initialZone = {
 };
 
 const initialWindowDimensions = {
-  'window-1': { width: 1.5, height: 1.1, sillHeight: 1.0 },
-  'window-2': { width: 1.5, height: 1.1, sillHeight: 1.0 },
-  'window-3': { width: 1.5, height: 1.1, sillHeight: 1.0 },
-  'window-4': { width: 1.5, height: 1.1, sillHeight: 1.0 },
+  'window-1': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
+  'window-2': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
+  'window-3': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
+  'window-4': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
+};
+
+const initialOverhangProperties = {
+  'window-1': { enabled: false, depth: 0.5, extensionLeft: 0.2, extensionRight: 0.2 },
+  'window-2': { enabled: false, depth: 0.5, extensionLeft: 0.2, extensionRight: 0.2 },
+  'window-3': { enabled: false, depth: 0.5, extensionLeft: 0.2, extensionRight: 0.2 },
+  'window-4': { enabled: false, depth: 0.5, extensionLeft: 0.2, extensionRight: 0.2 },
 };
 
 const initialSurfaceProperties = {
@@ -114,6 +136,7 @@ export const useStore = create<Store>((set, get) => ({
   selectedElement: null,
   dimensions: initialDimensions,
   windowDimensions: initialWindowDimensions,
+  overhangProperties: initialOverhangProperties,
   surfaceProperties: initialSurfaceProperties,
   northAngle: 0, // Radianos
   materials: initialMaterials,
@@ -126,6 +149,9 @@ export const useStore = create<Store>((set, get) => ({
   setWindowDimensions: (windowId, dimensions) => set({ 
     windowDimensions: { ...get().windowDimensions, [windowId]: dimensions } 
   }),
+  setOverhangProperties: (windowId, properties) => set({
+    overhangProperties: { ...get().overhangProperties, [windowId]: properties }
+  }),
   setSurfaceProperties: (surfaceId, properties) => set({
     surfaceProperties: { ...get().surfaceProperties, [surfaceId]: properties }
   }),
@@ -133,6 +159,7 @@ export const useStore = create<Store>((set, get) => ({
   setMaterials: (materials) => set({ materials }),
   setBuildingName: (name) => set({ building: { ...get().building, name } }),
   setBuildingEpwFile: (file) => set({ building: { ...get().building, epwFile: file } }),
+  setBuildingLocationData: (locationData) => set({ building: { ...get().building, locationData } }),
   setZoneName: (name) => set({ zone: { ...get().zone, name } }),
   setZoneConditioned: (conditioned) => set({ zone: { ...get().zone, conditioned } }),
   
@@ -181,14 +208,14 @@ export const useStore = create<Store>((set, get) => ({
   },
   
   exportToIdf: () => {
-    const { dimensions, northAngle, materials, building, zone, windowDimensions } = get();
+    const { dimensions, northAngle, materials, building, windowDimensions } = get();
     
-    // Gerar o IDF básico
-    const idfContent = generateBasicIdf(dimensions, northAngle, materials, building, zone, windowDimensions);
+    // Usar o gerador IDF corrigido com dados de localização se disponíveis
+    const idfContent = generateIdf(dimensions, northAngle, materials, windowDimensions, building.locationData || undefined);
     
     const dataUri = 'data:text/plain;charset=utf-8,'+ encodeURIComponent(idfContent);
     
-    const exportFileDefaultName = `${building.name.replace(/\s+/g, '_')}.idf`;
+    const exportFileDefaultName = `Tropos3D_Model.idf`;
     
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
@@ -201,240 +228,4 @@ export const useStore = create<Store>((set, get) => ({
   }
 }));
 
-// Função para gerar IDF básico
-const generateBasicIdf = (
-  dimensions: Dimensions, 
-  northAngle: number, 
-  materials: Materials, 
-  building: Building, 
-  zone: Zone, 
-  windowDimensions: Record<string, WindowDimensions>
-): string => {
-  const { width, length, height } = dimensions;
-  const northDeg = (northAngle * 180 / Math.PI) % 360;
-  
-  // Utilitário para formatar números
-  const formatNum = (num: number): string => num.toFixed(3);
-  
-  return `
-!---------------------------------------------------------
-! Tropos3D - Arquivo IDF para EnergyPlus
-! Gerado automaticamente
-!---------------------------------------------------------
-
-Version,
-  9.5;                                    !- Version Identifier
-
-Building,
-  ${building.name},                       !- Name
-  ${formatNum(northDeg)},                 !- North Axis {deg}
-  City,                                   !- Terrain
-  0.04,                                   !- Loads Convergence Tolerance Value {W}
-  0.4,                                    !- Temperature Convergence Tolerance Value {deltaC}
-  FullInteriorAndExterior,                !- Solar Distribution
-  25,                                     !- Maximum Number of Warmup Days
-  6;                                      !- Minimum Number of Warmup Days
-
-GlobalGeometryRules,
-  UpperLeftCorner,                        !- Starting Vertex Position
-  CounterClockWise,                       !- Vertex Entry Direction
-  Relative,                               !- Coordinate System
-  Relative,                               !- Daylighting Reference Point Coordinate System
-  Relative;                               !- Rectangular Surface Coordinate System
-
-Zone,
-  ${zone.name},                           !- Name
-  0,                                      !- Direction of Relative North {deg}
-  0,                                      !- X Origin {m}
-  0,                                      !- Y Origin {m}
-  0,                                      !- Z Origin {m}
-  1,                                      !- Type
-  1,                                      !- Multiplier
-  ${formatNum(height)},                   !- Ceiling Height {m}
-  ${formatNum(width * length * height)}; !- Volume {m3}
-
-${zone.conditioned ? `
-! SISTEMA HVAC PARA ZONA CONDICIONADA
-ZoneHVAC:EquipmentConnections,
-  ${zone.name},                           !- Zone Name
-  ${zone.name} Equipment,                 !- Zone Conditioning Equipment List Name
-  ${zone.name} Inlet Node,               !- Zone Air Inlet Node or NodeList Name
-  ,                                       !- Zone Air Exhaust Node or NodeList Name
-  ${zone.name} Zone Air Node,            !- Zone Air Node Name
-  ${zone.name} Return Outlet;            !- Zone Return Air Node Name
-
-ZoneHVAC:EquipmentList,
-  ${zone.name} Equipment,                 !- Name
-  ZoneHVAC:IdealLoadsAirSystem,          !- Zone Equipment 1 Object Type
-  ${zone.name} Ideal Loads,              !- Zone Equipment 1 Name
-  1,                                      !- Zone Equipment 1 Cooling Sequence
-  1;                                      !- Zone Equipment 1 Heating Sequence
-
-ZoneHVAC:IdealLoadsAirSystem,
-  ${zone.name} Ideal Loads,              !- Name
-  ,                                       !- Availability Schedule Name
-  ${zone.name} Inlet Node,               !- Zone Supply Air Node Name
-  ,                                       !- Zone Exhaust Air Node Name
-  50,                                     !- Maximum Heating Supply Air Temperature {C}
-  13,                                     !- Minimum Cooling Supply Air Temperature {C}
-  0.015,                                  !- Maximum Heating Supply Air Humidity Ratio {kgWater/kgDryAir}
-  0.009,                                  !- Minimum Cooling Supply Air Humidity Ratio {kgWater/kgDryAir}
-  NoLimit,                                !- Heating Limit
-  autosize,                               !- Maximum Heating Air Flow Rate {m3/s}
-  ,                                       !- Maximum Sensible Heating Capacity {W}
-  NoLimit,                                !- Cooling Limit
-  autosize,                               !- Maximum Cooling Air Flow Rate {m3/s}
-  ,                                       !- Maximum Total Cooling Capacity {W}
-  ,                                       !- Heating Availability Schedule Name
-  ,                                       !- Cooling Availability Schedule Name
-  ConstantSupplyHumidityRatio,           !- Dehumidification Control Type
-  ,                                       !- Cooling Sensible Heat Ratio {dimensionless}
-  ConstantSupplyHumidityRatio,           !- Humidification Control Type
-  ,                                       !- Design Specification Outdoor Air Object Name
-  ,                                       !- Outdoor Air Inlet Node Name
-  ,                                       !- Demand Controlled Ventilation Type
-  ,                                       !- Outdoor Air Economizer Type
-  ,                                       !- Heat Recovery Type
-  ,                                       !- Sensible Heat Recovery Effectiveness {dimensionless}
-  ;                                       !- Latent Heat Recovery Effectiveness {dimensionless}
-` : `
-! VENTILAÇÃO NATURAL PARA ZONA NÃO CONDICIONADA
-ZoneVentilation:DesignFlowRate,
-  ${zone.name} Ventilation,              !- Name
-  ${zone.name},                          !- Zone or ZoneList Name
-  ,                                       !- Schedule Name
-  DesignFlowRate,                         !- Design Flow Rate Calculation Method
-  ${formatNum(width * length * height * 2)}, !- Design Flow Rate {m3/s}
-  ,                                       !- Flow Rate per Zone Floor Area {m3/s-m2}
-  ,                                       !- Flow Rate per Person {m3/s-person}
-  ,                                       !- Air Changes per Hour {1/hr}
-  Intake,                                 !- Ventilation Type
-  ,                                       !- Fan Pressure Rise {Pa}
-  ,                                       !- Fan Total Efficiency {dimensionless}
-  ,                                       !- Constant Term Coefficient
-  ,                                       !- Temperature Term Coefficient
-  ,                                       !- Velocity Term Coefficient
-  ,                                       !- Velocity Squared Term Coefficient
-  20,                                     !- Minimum Indoor Temperature {C}
-  ,                                       !- Minimum Indoor Temperature Schedule Name
-  30,                                     !- Maximum Indoor Temperature {C}
-  ,                                       !- Maximum Indoor Temperature Schedule Name
-  -100,                                   !- Delta Temperature {deltaC}
-  ,                                       !- Delta Temperature Schedule Name
-  -100,                                   !- Minimum Outdoor Temperature {C}
-  ,                                       !- Minimum Outdoor Temperature Schedule Name
-  50,                                     !- Maximum Outdoor Temperature {C}
-  ,                                       !- Maximum Outdoor Temperature Schedule Name
-  40;                                     !- Maximum Wind Speed {m/s}
-`}
-
-! SUPERFÍCIES
-
-BuildingSurface:Detailed,
-  Floor,                                  !- Name
-  Floor,                                  !- Surface Type
-  FLOOR-CONSTRUCTION,                     !- Construction Name
-  Zone Default,                           !- Zone Name
-  Ground,                                 !- Outside Boundary Condition
-  ,                                       !- Outside Boundary Condition Object
-  NoSun,                                  !- Sun Exposure
-  NoWind,                                 !- Wind Exposure
-  0.0,                                    !- View Factor to Ground
-  4,                                      !- Number of Vertices
-  ${formatNum(-width/2)}, ${formatNum(0)}, ${formatNum(-length/2)},  !- X,Y,Z Vertex 1 {m}
-  ${formatNum(-width/2)}, ${formatNum(0)}, ${formatNum(length/2)},   !- X,Y,Z Vertex 2 {m}
-  ${formatNum(width/2)}, ${formatNum(0)}, ${formatNum(length/2)},    !- X,Y,Z Vertex 3 {m}
-  ${formatNum(width/2)}, ${formatNum(0)}, ${formatNum(-length/2)};   !- X,Y,Z Vertex 4 {m}
-
-BuildingSurface:Detailed,
-  Ceiling,                                !- Name
-  Ceiling,                                !- Surface Type
-  CEILING-CONSTRUCTION,                   !- Construction Name
-  Zone Default,                           !- Zone Name
-  Outdoors,                               !- Outside Boundary Condition
-  ,                                       !- Outside Boundary Condition Object
-  SunExposed,                             !- Sun Exposure
-  WindExposed,                            !- Wind Exposure
-  0.0,                                    !- View Factor to Ground
-  4,                                      !- Number of Vertices
-  ${formatNum(width/2)}, ${formatNum(height)}, ${formatNum(-length/2)},  !- X,Y,Z Vertex 1 {m}
-  ${formatNum(width/2)}, ${formatNum(height)}, ${formatNum(length/2)},   !- X,Y,Z Vertex 2 {m}
-  ${formatNum(-width/2)}, ${formatNum(height)}, ${formatNum(length/2)},  !- X,Y,Z Vertex 3 {m}
-  ${formatNum(-width/2)}, ${formatNum(height)}, ${formatNum(-length/2)}; !- X,Y,Z Vertex 4 {m}
-
-BuildingSurface:Detailed,
-  Wall North,                             !- Name
-  Wall,                                   !- Surface Type
-  WALL-CONSTRUCTION,                      !- Construction Name
-  Zone Default,                           !- Zone Name
-  Outdoors,                               !- Outside Boundary Condition
-  ,                                       !- Outside Boundary Condition Object
-  SunExposed,                             !- Sun Exposure
-  WindExposed,                            !- Wind Exposure
-  0.0,                                    !- View Factor to Ground
-  4,                                      !- Number of Vertices
-  ${formatNum(-width/2)}, ${formatNum(height)}, ${formatNum(-length/2)},  !- X,Y,Z Vertex 1 {m}
-  ${formatNum(-width/2)}, ${formatNum(0)}, ${formatNum(-length/2)},       !- X,Y,Z Vertex 2 {m}
-  ${formatNum(width/2)}, ${formatNum(0)}, ${formatNum(-length/2)},        !- X,Y,Z Vertex 3 {m}
-  ${formatNum(width/2)}, ${formatNum(height)}, ${formatNum(-length/2)};   !- X,Y,Z Vertex 4 {m}
-
-FenestrationSurface:Detailed,
-  Window North,                           !- Name
-  Window,                                 !- Surface Type
-  WINDOW-CONSTRUCTION,                    !- Construction Name
-  Wall North,                             !- Building Surface Name
-  ,                                       !- Outside Boundary Condition Object
-  0.0,                                    !- View Factor to Ground
-  ,                                       !- Frame and Divider Name
-  1.0,                                    !- Multiplier
-  4,                                      !- Number of Vertices
-  ${formatNum(-0.75)}, ${formatNum(2.1)}, ${formatNum(-length/2 + 0.01)},  !- X,Y,Z Vertex 1 {m}
-  ${formatNum(-0.75)}, ${formatNum(1.0)}, ${formatNum(-length/2 + 0.01)},  !- X,Y,Z Vertex 2 {m}
-  ${formatNum(0.75)}, ${formatNum(1.0)}, ${formatNum(-length/2 + 0.01)},   !- X,Y,Z Vertex 3 {m}
-  ${formatNum(0.75)}, ${formatNum(2.1)}, ${formatNum(-length/2 + 0.01)};   !- X,Y,Z Vertex 4 {m}
-
-! CONSTRUÇÕES E MATERIAIS
-
-Material,
-  Concrete,                               !- Name
-  MediumRough,                            !- Roughness
-  0.10,                                   !- Thickness {m}
-  1.7,                                    !- Conductivity {W/m-K}
-  2300,                                   !- Density {kg/m3}
-  920;                                    !- Specific Heat {J/kg-K}
-
-Construction,
-  WALL-CONSTRUCTION,                      !- Name
-  Concrete;                               !- Outside Layer
-
-Construction,
-  FLOOR-CONSTRUCTION,                     !- Name
-  Concrete;                               !- Outside Layer
-
-Construction,
-  CEILING-CONSTRUCTION,                   !- Name
-  Concrete;                               !- Outside Layer
-
-WindowMaterial:Glazing,
-  Clear 3mm,                              !- Name
-  SpectralAverage,                        !- Optical Data Type
-  ,                                       !- Window Glass Spectral Data Set Name
-  0.003,                                  !- Thickness {m}
-  0.837,                                  !- Solar Transmittance at Normal Incidence
-  0.075,                                  !- Front Side Solar Reflectance at Normal Incidence
-  0.075,                                  !- Back Side Solar Reflectance at Normal Incidence
-  0.898,                                  !- Visible Transmittance at Normal Incidence
-  0.081,                                  !- Front Side Visible Reflectance at Normal Incidence
-  0.081,                                  !- Back Side Visible Reflectance at Normal Incidence
-  0,                                      !- Infrared Transmittance at Normal Incidence
-  0.84,                                   !- Front Side Infrared Hemispherical Emissivity
-  0.84,                                   !- Back Side Infrared Hemispherical Emissivity
-  0.9;                                    !- Conductivity {W/m-K}
-
-Construction,
-  WINDOW-CONSTRUCTION,                    !- Name
-  Clear 3mm;                              !- Outside Layer
-
-! Arquivo gerado pelo Tropos3D - Materiais: ${JSON.stringify(materials)}
-`;
-};
+export default useStore; 

@@ -16,6 +16,14 @@ export interface Materials {
   surface: string;
 }
 
+export interface LocationData {
+  name: string;
+  latitude: number;
+  longitude: number;
+  timezone: number;
+  elevation: number;
+}
+
 export interface Zone {
   id: string;
   name: string;

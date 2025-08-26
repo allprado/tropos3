@@ -25,7 +25,7 @@ export const runJessWebSimulation = async (idfContent: string): Promise<any> => 
     formData.append('idfFile', new Blob([idfContent], { type: 'text/plain' }), 'model.idf');
     formData.append('weatherFile', 'BRA_Sao.Paulo.837800_IWEC.epw'); // Arquivo de clima padrão
     formData.append('simulationType', 'annual');
-    formData.append('epVersion', '9.5.0');
+    formData.append('epVersion', '8.9.0');
     
     // Enviando a requisição
     const response = await axios.post(apiUrl, formData, {

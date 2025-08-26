@@ -125,7 +125,6 @@ const BasicPropertiesPanel = () => {
     building,
     setBuildingName,
     setBuildingEpwFile,
-    setBuildingLocationData,
     zone,
     setZoneName,
     setZoneConditioned
@@ -160,29 +159,6 @@ const BasicPropertiesPanel = () => {
     const file = e.target.files?.[0];
     if (file && file.name.endsWith('.epw')) {
       setBuildingEpwFile(file.name);
-      
-      // Ler o arquivo EPW para extrair dados de localização
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        try {
-          const epwContent = event.target?.result as string;
-          if (epwContent) {
-            // Importar a função parseEpwLocation dinamicamente
-            const { parseEpwLocation } = await import('../../services/idfGenerator');
-            const locationData = parseEpwLocation(epwContent);
-            
-            if (locationData) {
-              setBuildingLocationData(locationData);
-              console.log('Dados de localização extraídos do EPW:', locationData);
-            } else {
-              console.warn('Não foi possível extrair dados de localização do arquivo EPW');
-            }
-          }
-        } catch (error) {
-          console.error('Erro ao processar arquivo EPW:', error);
-        }
-      };
-      reader.readAsText(file);
     } else {
       alert('Por favor, selecione um arquivo .epw válido');
     }
@@ -202,46 +178,39 @@ const BasicPropertiesPanel = () => {
     });
   };
 
-  // Função para mapear wall-id para window-id
-  const getWindowIdFromWallId = (wallId: string): string => {
-    return wallId.replace('wall-', 'window-');
-  };
-
-  // Função para habilitar/desabilitar janela
   const handleWindowEnabledChange = (windowId: string, enabled: boolean) => {
+    const currentDimensions = windowDimensions[windowId];
+    if (!currentDimensions) return;
+
     setWindowDimensions(windowId, {
-      ...windowDimensions[windowId],
-      enabled: enabled,
-      width: windowDimensions[windowId]?.width || 1.5,
-      height: windowDimensions[windowId]?.height || 1.1,
-      sillHeight: windowDimensions[windowId]?.sillHeight || 1.0
+      ...currentDimensions,
+      enabled
     });
   };
 
-  // Função para alterar propriedades do overhang
   const handleOverhangPropertyChange = (
-    windowId: string, 
-    property: 'enabled' | 'depth' | 'extensionLeft' | 'extensionRight', 
+    windowId: string,
+    property: 'enabled' | 'depth' | 'extensionLeft' | 'extensionRight',
     value: boolean | number
   ) => {
-    console.log(`Changing overhang property: ${property} = ${value} for window ${windowId}`);
-    
-    const currentProps = overhangProperties[windowId] || {
-      enabled: false,
-      depth: 0.5,
-      extensionLeft: 0.2,
-      extensionRight: 0.2
-    };
-    
-    const newProps = {
+    const currentProps = overhangProperties[windowId];
+    if (!currentProps) return;
+
+    setOverhangProperties(windowId, {
       ...currentProps,
       [property]: value
+    });
+  };
+
+  // Função para mapear ID da parede para ID da janela correspondente
+  const getWindowIdFromWallId = (wallId: string): string => {
+    const mapping: Record<string, string> = {
+      'wall-1': 'window-1',
+      'wall-2': 'window-2', 
+      'wall-3': 'window-3',
+      'wall-4': 'window-4'
     };
-    
-    console.log('Current props:', currentProps);
-    console.log('New props:', newProps);
-    
-    setOverhangProperties(windowId, newProps);
+    return mapping[wallId] || wallId;
   };
   
   if (!selectedElement) {
@@ -400,41 +369,122 @@ const BasicPropertiesPanel = () => {
             </PropertyRow>
           </>
         )}
-        
-        {(selectedElement.type === 'wall' || selectedElement.type === 'surface') && (
-          <>
-            <PropertyRow>
-              <PropertyLabel>Material:</PropertyLabel>
-              <PropertySelect 
-                value={materials[selectedElement.type === 'wall' ? 'wall' : 'surface']} 
-                onChange={(e) => handleMaterialChange(e, selectedElement.type === 'wall' ? 'wall' : 'surface')}
-              >
-                {selectedElement.type === 'wall' ? (
-                  <>
-                    <option value="brick">Tijolo</option>
-                    <option value="concrete">Concreto</option>
-                    <option value="wood">Madeira</option>
-                    <option value="drywall">Drywall</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="tile">Cerâmica</option>
-                    <option value="wood">Madeira</option>
-                    <option value="carpet">Carpete</option>
-                    <option value="concrete">Concreto</option>
-                  </>
-                )}
-              </PropertySelect>
-            </PropertyRow>
-          </>
-        )}
-        
-        {/* Propriedades da Janela (para paredes) */}
+
+        {/* Configurações de Janela (apenas para paredes) */}
         {selectedElement.type === 'wall' && (
           <PropertyGroup>
             <GroupTitle>
-              <BiWindow size={18} /> Propriedades da Janela
+              <BiWindow />
+              Configurações da Janela
             </GroupTitle>
+            
+            <PropertyRow>
+              <PropertyLabel style={{ display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
+                <input
+                  type="checkbox"
+                  checked={windowDimensions[getWindowIdFromWallId(selectedElement.id)]?.enabled || false}
+                  onChange={(e) => handleWindowEnabledChange(getWindowIdFromWallId(selectedElement.id), e.target.checked)}
+                  style={{ marginRight: '0.5rem' }}
+                />
+                Habilitar Janela
+              </PropertyLabel>
+            </PropertyRow>
+            
+            {windowDimensions[getWindowIdFromWallId(selectedElement.id)]?.enabled && (
+              <>
+                <PropertyRow>
+                  <PropertyLabel style={{ display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
+                    <input
+                      type="checkbox"
+                      checked={overhangProperties[getWindowIdFromWallId(selectedElement.id)]?.enabled || false}
+                      onChange={(e) => handleOverhangPropertyChange(getWindowIdFromWallId(selectedElement.id), 'enabled', e.target.checked)}
+                      style={{ marginRight: '0.5rem' }}
+                    />
+                    Habilitar Overhang
+                  </PropertyLabel>
+                </PropertyRow>
+                
+                {overhangProperties[getWindowIdFromWallId(selectedElement.id)]?.enabled && (
+                  <>
+                    <PropertyRow>
+                      <PropertyLabel>Profundidade (m):</PropertyLabel>
+                      <PropertyInput
+                        type="number"
+                        value={overhangProperties[getWindowIdFromWallId(selectedElement.id)]?.depth || 0.5}
+                        onChange={(e) => handleOverhangPropertyChange(
+                          getWindowIdFromWallId(selectedElement.id), 
+                          'depth', 
+                          parseFloat(e.target.value) || 0.5
+                        )}
+                        step="0.1"
+                        min="0.1"
+                        max="2.0"
+                      />
+                    </PropertyRow>
+                    
+                    <PropertyRow>
+                      <PropertyLabel>Extensão Esquerda (m):</PropertyLabel>
+                      <PropertyInput
+                        type="number"
+                        value={overhangProperties[getWindowIdFromWallId(selectedElement.id)]?.extensionLeft || 0.2}
+                        onChange={(e) => handleOverhangPropertyChange(
+                          getWindowIdFromWallId(selectedElement.id), 
+                          'extensionLeft', 
+                          parseFloat(e.target.value) || 0.2
+                        )}
+                        step="0.1"
+                        min="0.0"
+                        max="1.0"
+                      />
+                    </PropertyRow>
+                    
+                    <PropertyRow>
+                      <PropertyLabel>Extensão Direita (m):</PropertyLabel>
+                      <PropertyInput
+                        type="number"
+                        value={overhangProperties[getWindowIdFromWallId(selectedElement.id)]?.extensionRight || 0.2}
+                        onChange={(e) => handleOverhangPropertyChange(
+                          getWindowIdFromWallId(selectedElement.id), 
+                          'extensionRight', 
+                          parseFloat(e.target.value) || 0.2
+                        )}
+                        step="0.1"
+                        min="0.0"
+                        max="1.0"
+                      />
+                    </PropertyRow>
+                  </>
+                )}
+              </>
+            )}
+          </PropertyGroup>
+        )}
+        {selectedElement.type === 'wall' && (
+          <>
+            <PropertyGroup>
+              <GroupTitle>
+                <BiBuilding size={18} /> Propriedades da Parede
+              </GroupTitle>
+              
+              <PropertyRow>
+                <PropertyLabel>Material:</PropertyLabel>
+                <PropertySelect 
+                  value={materials.wall} 
+                  onChange={(e) => handleMaterialChange(e, 'wall')}
+                >
+                  <option value="brick">Tijolo</option>
+                  <option value="concrete">Concreto</option>
+                  <option value="wood">Madeira</option>
+                  <option value="drywall">Drywall</option>
+                </PropertySelect>
+              </PropertyRow>
+            </PropertyGroup>
+            
+            {/* Propriedades da Janela (para paredes com janelas) */}
+            <PropertyGroup>
+              <GroupTitle>
+                <BiRuler size={18} /> Propriedades da Janela
+              </GroupTitle>
             
             <PropertyRow>
               <PropertyLabel style={{ display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
@@ -461,165 +511,6 @@ const BasicPropertiesPanel = () => {
                     <option value="low_e">Vidro Low-E</option>
                   </PropertySelect>
                 </PropertyRow>
-                
-                <PropertyRow>
-                  <PropertyLabel>Largura (m):</PropertyLabel>
-                  <PropertyInput 
-                    type="number" 
-                    value={windowDimensions[getWindowIdFromWallId(selectedElement.id)]?.width || 1.5} 
-                    onChange={(e) => {
-                      const value = parseFloat(e.target.value);
-                      if (!isNaN(value) && value > 0 && value <= Math.min(dimensions.width, dimensions.length)) {
-                        setWindowDimensions(getWindowIdFromWallId(selectedElement.id), {
-                          ...windowDimensions[getWindowIdFromWallId(selectedElement.id)],
-                          width: value
-                        });
-                      }
-                    }}
-                    step="0.1"
-                    min="0.1"
-                    max={Math.min(dimensions.width, dimensions.length)}
-                  />
-                </PropertyRow>
-                
-                <PropertyRow>
-                  <PropertyLabel>Altura (m):</PropertyLabel>
-                  <PropertyInput 
-                    type="number" 
-                    value={windowDimensions[getWindowIdFromWallId(selectedElement.id)]?.height || 1.1} 
-                    onChange={(e) => {
-                      const value = parseFloat(e.target.value);
-                      const sillHeight = windowDimensions[getWindowIdFromWallId(selectedElement.id)]?.sillHeight || 1.0;
-                      if (!isNaN(value) && value > 0 && (value + sillHeight) <= dimensions.height) {
-                        setWindowDimensions(getWindowIdFromWallId(selectedElement.id), {
-                          ...windowDimensions[getWindowIdFromWallId(selectedElement.id)],
-                          height: value
-                        });
-                      }
-                    }}
-                    step="0.1"
-                    min="0.1"
-                    max={dimensions.height - (windowDimensions[getWindowIdFromWallId(selectedElement.id)]?.sillHeight || 1.0)}
-                  />
-                </PropertyRow>
-                
-                <PropertyRow>
-                  <PropertyLabel>Altura do Peitoril (m):</PropertyLabel>
-                  <PropertyInput 
-                    type="number" 
-                    value={windowDimensions[getWindowIdFromWallId(selectedElement.id)]?.sillHeight || 1.0} 
-                    onChange={(e) => {
-                      const value = parseFloat(e.target.value);
-                      const windowHeight = windowDimensions[getWindowIdFromWallId(selectedElement.id)]?.height || 1.1;
-                      if (!isNaN(value) && value >= 0 && (value + windowHeight) <= dimensions.height) {
-                        setWindowDimensions(getWindowIdFromWallId(selectedElement.id), {
-                          ...windowDimensions[getWindowIdFromWallId(selectedElement.id)],
-                          sillHeight: value
-                        });
-                      }
-                    }}
-                    step="0.1"
-                    min="0"
-                    max={dimensions.height - (windowDimensions[getWindowIdFromWallId(selectedElement.id)]?.height || 1.1)}
-                  />
-                </PropertyRow>
-                
-                <PropertyRow>
-                  <PropertyLabel style={{ display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
-                    <input
-                      type="checkbox"
-                      checked={overhangProperties[getWindowIdFromWallId(selectedElement.id)]?.enabled || false}
-                      onChange={(e) => handleOverhangPropertyChange(getWindowIdFromWallId(selectedElement.id), 'enabled', e.target.checked)}
-                      style={{ marginRight: '0.5rem' }}
-                    />
-                    Habilitar Overhang
-                  </PropertyLabel>
-                </PropertyRow>
-                
-                {overhangProperties[getWindowIdFromWallId(selectedElement.id)]?.enabled && (
-                  <>
-                    <PropertyRow>
-                      <PropertyLabel>Profundidade (m):</PropertyLabel>
-                      <PropertyInput
-                        type="number"
-                        value={overhangProperties[getWindowIdFromWallId(selectedElement.id)]?.depth || 0.5}
-                        onChange={(e) => {
-                          const value = parseFloat(e.target.value);
-                          if (!isNaN(value) && value >= 0.1 && value <= 2.0) {
-                            handleOverhangPropertyChange(
-                              getWindowIdFromWallId(selectedElement.id), 
-                              'depth', 
-                              value
-                            );
-                          }
-                        }}
-                        step="0.1"
-                        min="0.1"
-                        max="2.0"
-                      />
-                    </PropertyRow>
-                    
-                    <PropertyRow>
-                      <PropertyLabel>Extensão Esquerda (m):</PropertyLabel>
-                      <PropertyInput
-                        type="number"
-                        value={overhangProperties[getWindowIdFromWallId(selectedElement.id)]?.extensionLeft || 0.2}
-                        onChange={(e) => {
-                          const value = parseFloat(e.target.value);
-                          if (!isNaN(value) && value >= 0.0 && value <= 1.0) {
-                            handleOverhangPropertyChange(
-                              getWindowIdFromWallId(selectedElement.id), 
-                              'extensionLeft', 
-                              value
-                            );
-                          }
-                        }}
-                        step="0.1"
-                        min="0.0"
-                        max="1.0"
-                      />
-                    </PropertyRow>
-                    
-                    <PropertyRow>
-                      <PropertyLabel>Extensão Direita (m):</PropertyLabel>
-                      <PropertyInput
-                        type="number"
-                        value={overhangProperties[getWindowIdFromWallId(selectedElement.id)]?.extensionRight || 0.2}
-                        onChange={(e) => {
-                          const value = parseFloat(e.target.value);
-                          if (!isNaN(value) && value >= 0.0 && value <= 1.0) {
-                            handleOverhangPropertyChange(
-                              getWindowIdFromWallId(selectedElement.id), 
-                              'extensionRight', 
-                              value
-                            );
-                          }
-                        }}
-                        step="0.1"
-                        min="0.0"
-                        max="1.0"
-                      />
-                    </PropertyRow>
-                  </>
-                )}
-              </>
-            )}
-          </PropertyGroup>
-        )}
-        
-        {selectedElement.type === 'window' && (
-          <>
-            <PropertyRow>
-              <PropertyLabel>Material:</PropertyLabel>
-              <PropertySelect 
-                value={materials.window} 
-                onChange={(e) => handleMaterialChange(e, 'window')}
-              >
-                <option value="single_clear">Vidro Simples</option>
-                <option value="double_clear">Vidro Duplo</option>
-                <option value="low_e">Vidro Low-E</option>
-              </PropertySelect>
-            </PropertyRow>
             
             <PropertyRow>
               <PropertyLabel>Largura (m):</PropertyLabel>
@@ -759,7 +650,7 @@ const BasicPropertiesPanel = () => {
           {surfaceProperties[selectedElement.id] && (
             <>
               <PropertyRow>
-                <PropertyLabel style={{ display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
+                <PropertyLabel>
                   <input
                     type="checkbox"
                     checked={surfaceProperties[selectedElement.id]?.isAdiabatic || false}

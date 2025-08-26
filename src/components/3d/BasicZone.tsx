@@ -7,7 +7,7 @@ interface BasicZoneProps {
 }
 
 const BasicZone = ({ position = [0, 0, 0] }: BasicZoneProps) => {
-  const { dimensions, selectedElement, setSelectedElement, windowDimensions } = useStore();
+  const { dimensions, selectedElement, setSelectedElement, windowDimensions, surfaceProperties, overhangProperties } = useStore();
   const { width, length, height } = dimensions;
   
   const floorRef = useRef<Mesh>(null);
@@ -59,6 +59,12 @@ const BasicZone = ({ position = [0, 0, 0] }: BasicZoneProps) => {
   const getSelectionColor = (id: string, hoverColor: string, defaultColor: string) => {
     if (isSelected(id)) return "#ff8c00"; // Cor laranja para seleção
     if (hovered === id) return hoverColor;
+    
+    // Verificar se a superfície é adiabática
+    if (surfaceProperties[id]?.isAdiabatic) {
+      return "#8A2BE2"; // Cor roxa para superfícies adiabáticas
+    }
+    
     return defaultColor;
   };
   
@@ -165,75 +171,165 @@ const BasicZone = ({ position = [0, 0, 0] }: BasicZoneProps) => {
       
       {/* Janelas numeradas - faces planas */}
       {/* Janela 1 (Parede 1) */}
-      <mesh
-        position={[0, (windowDimensions['window-1']?.sillHeight || 1.0) + (windowDimensions['window-1']?.height || 1.1) / 2, -length / 2 - 0.02]}
-        onClick={(e) => handleElementClick('window', 'window-1', 'Janela 1', e)}
-        onPointerOver={() => setHovered('window-1')}
-        onPointerOut={() => setHovered(null)}
-      >
-        <boxGeometry args={[windowDimensions['window-1']?.width || 1.5, windowDimensions['window-1']?.height || 1.1, 0.02]} />
-        <meshPhysicalMaterial 
-          color={getSelectionColor('window-1', "#87ceeb", "#4682b4")}
-          transparent 
-          opacity={0.6}
-          roughness={0}
-          metalness={0.3}
-        />
-      </mesh>
+      {windowDimensions['window-1']?.enabled && (
+        <>
+          <mesh
+            position={[0, (windowDimensions['window-1']?.sillHeight || 1.0) + (windowDimensions['window-1']?.height || 1.1) / 2, -length / 2 - 0.02]}
+            onClick={(e) => handleElementClick('window', 'window-1', 'Janela 1', e)}
+            onPointerOver={() => setHovered('window-1')}
+            onPointerOut={() => setHovered(null)}
+          >
+            <boxGeometry args={[windowDimensions['window-1']?.width || 1.5, windowDimensions['window-1']?.height || 1.1, 0.02]} />
+            <meshPhysicalMaterial 
+              color={getSelectionColor('window-1', "#87ceeb", "#4682b4")}
+              transparent 
+              opacity={0.6}
+              roughness={0}
+              metalness={0.3}
+            />
+          </mesh>
+          
+          {/* Overhang para Janela 1 */}
+          {overhangProperties['window-1']?.enabled && (
+            <mesh
+              position={[
+                ((overhangProperties['window-1']?.extensionRight || 0.2) - (overhangProperties['window-1']?.extensionLeft || 0.2)) / 2,
+                (windowDimensions['window-1']?.sillHeight || 1.0) + (windowDimensions['window-1']?.height || 1.1) + 0.05, 
+                -length / 2 - (overhangProperties['window-1']?.depth || 0.5) / 2
+              ]}
+            >
+              <boxGeometry args={[
+                (windowDimensions['window-1']?.width || 1.5) + (overhangProperties['window-1']?.extensionLeft || 0.2) + (overhangProperties['window-1']?.extensionRight || 0.2),
+                0.1,
+                overhangProperties['window-1']?.depth || 0.5
+              ]} />
+              <meshStandardMaterial color="#cccccc" />
+            </mesh>
+          )}
+        </>
+      )}
       
       {/* Janela 2 (Parede 2) */}
-      <mesh
-        position={[0, (windowDimensions['window-2']?.sillHeight || 1.0) + (windowDimensions['window-2']?.height || 1.1) / 2, length / 2 + 0.02]}
-        rotation={[0, Math.PI, 0]}
-        onClick={(e) => handleElementClick('window', 'window-2', 'Janela 2', e)}
-        onPointerOver={() => setHovered('window-2')}
-        onPointerOut={() => setHovered(null)}
-      >
-        <boxGeometry args={[windowDimensions['window-2']?.width || 1.5, windowDimensions['window-2']?.height || 1.1, 0.02]} />
-        <meshPhysicalMaterial 
-          color={getSelectionColor('window-2', "#87ceeb", "#4682b4")}
-          transparent 
-          opacity={0.6}
-          roughness={0}
-          metalness={0.3}
-        />
-      </mesh>
+      {windowDimensions['window-2']?.enabled && (
+        <>
+          <mesh
+            position={[0, (windowDimensions['window-2']?.sillHeight || 1.0) + (windowDimensions['window-2']?.height || 1.1) / 2, length / 2 + 0.02]}
+            rotation={[0, Math.PI, 0]}
+            onClick={(e) => handleElementClick('window', 'window-2', 'Janela 2', e)}
+            onPointerOver={() => setHovered('window-2')}
+            onPointerOut={() => setHovered(null)}
+          >
+            <boxGeometry args={[windowDimensions['window-2']?.width || 1.5, windowDimensions['window-2']?.height || 1.1, 0.02]} />
+            <meshPhysicalMaterial 
+              color={getSelectionColor('window-2', "#87ceeb", "#4682b4")}
+              transparent 
+              opacity={0.6}
+              roughness={0}
+              metalness={0.3}
+            />
+          </mesh>
+          
+          {/* Overhang para Janela 2 */}
+          {overhangProperties['window-2']?.enabled && (
+            <mesh
+              position={[
+                ((overhangProperties['window-2']?.extensionRight || 0.2) - (overhangProperties['window-2']?.extensionLeft || 0.2)) / 2,
+                (windowDimensions['window-2']?.sillHeight || 1.0) + (windowDimensions['window-2']?.height || 1.1) + 0.05, 
+                length / 2 + (overhangProperties['window-2']?.depth || 0.5) / 2
+              ]}
+            >
+              <boxGeometry args={[
+                (windowDimensions['window-2']?.width || 1.5) + (overhangProperties['window-2']?.extensionLeft || 0.2) + (overhangProperties['window-2']?.extensionRight || 0.2),
+                0.1,
+                overhangProperties['window-2']?.depth || 0.5
+              ]} />
+              <meshStandardMaterial color="#cccccc" />
+            </mesh>
+          )}
+        </>
+      )}
       
       {/* Janela 3 (Parede 3) */}
-      <mesh
-        position={[width / 2 + 0.02, (windowDimensions['window-3']?.sillHeight || 1.0) + (windowDimensions['window-3']?.height || 1.1) / 2, 0]}
-        rotation={[0, Math.PI / 2, 0]}
-        onClick={(e) => handleElementClick('window', 'window-3', 'Janela 3', e)}
-        onPointerOver={() => setHovered('window-3')}
-        onPointerOut={() => setHovered(null)}
-      >
-        <boxGeometry args={[windowDimensions['window-3']?.width || 1.5, windowDimensions['window-3']?.height || 1.1, 0.02]} />
-        <meshPhysicalMaterial 
-          color={getSelectionColor('window-3', "#87ceeb", "#4682b4")}
-          transparent 
-          opacity={0.6}
-          roughness={0}
-          metalness={0.3}
-        />
-      </mesh>
+      {windowDimensions['window-3']?.enabled && (
+        <>
+          <mesh
+            position={[width / 2 + 0.02, (windowDimensions['window-3']?.sillHeight || 1.0) + (windowDimensions['window-3']?.height || 1.1) / 2, 0]}
+            rotation={[0, Math.PI / 2, 0]}
+            onClick={(e) => handleElementClick('window', 'window-3', 'Janela 3', e)}
+            onPointerOver={() => setHovered('window-3')}
+            onPointerOut={() => setHovered(null)}
+          >
+            <boxGeometry args={[windowDimensions['window-3']?.width || 1.5, windowDimensions['window-3']?.height || 1.1, 0.02]} />
+            <meshPhysicalMaterial 
+              color={getSelectionColor('window-3', "#87ceeb", "#4682b4")}
+              transparent 
+              opacity={0.6}
+              roughness={0}
+              metalness={0.3}
+            />
+          </mesh>
+          
+          {/* Overhang para Janela 3 */}
+          {overhangProperties['window-3']?.enabled && (
+            <mesh
+              position={[
+                width / 2 + (overhangProperties['window-3']?.depth || 0.5) / 2, 
+                (windowDimensions['window-3']?.sillHeight || 1.0) + (windowDimensions['window-3']?.height || 1.1) + 0.05, 
+                ((overhangProperties['window-3']?.extensionRight || 0.2) - (overhangProperties['window-3']?.extensionLeft || 0.2)) / 2
+              ]}
+              rotation={[0, Math.PI / 2, 0]}
+            >
+              <boxGeometry args={[
+                (windowDimensions['window-3']?.width || 1.5) + (overhangProperties['window-3']?.extensionLeft || 0.2) + (overhangProperties['window-3']?.extensionRight || 0.2),
+                0.1,
+                overhangProperties['window-3']?.depth || 0.5
+              ]} />
+              <meshStandardMaterial color="#cccccc" />
+            </mesh>
+          )}
+        </>
+      )}
       
       {/* Janela 4 (Parede 4) */}
-      <mesh
-        position={[-width / 2 - 0.02, (windowDimensions['window-4']?.sillHeight || 1.0) + (windowDimensions['window-4']?.height || 1.1) / 2, 0]}
-        rotation={[0, -Math.PI / 2, 0]}
-        onClick={(e) => handleElementClick('window', 'window-4', 'Janela 4', e)}
-        onPointerOver={() => setHovered('window-4')}
-        onPointerOut={() => setHovered(null)}
-      >
-        <boxGeometry args={[windowDimensions['window-4']?.width || 1.5, windowDimensions['window-4']?.height || 1.1, 0.02]} />
-        <meshPhysicalMaterial 
-          color={getSelectionColor('window-4', "#87ceeb", "#4682b4")}
-          transparent 
-          opacity={0.6}
-          roughness={0}
-          metalness={0.3}
-        />
-      </mesh>
+      {windowDimensions['window-4']?.enabled && (
+        <>
+          <mesh
+            position={[-width / 2 - 0.02, (windowDimensions['window-4']?.sillHeight || 1.0) + (windowDimensions['window-4']?.height || 1.1) / 2, 0]}
+            rotation={[0, -Math.PI / 2, 0]}
+            onClick={(e) => handleElementClick('window', 'window-4', 'Janela 4', e)}
+            onPointerOver={() => setHovered('window-4')}
+            onPointerOut={() => setHovered(null)}
+          >
+            <boxGeometry args={[windowDimensions['window-4']?.width || 1.5, windowDimensions['window-4']?.height || 1.1, 0.02]} />
+            <meshPhysicalMaterial 
+              color={getSelectionColor('window-4', "#87ceeb", "#4682b4")}
+              transparent 
+              opacity={0.6}
+              roughness={0}
+              metalness={0.3}
+            />
+          </mesh>
+          
+          {/* Overhang para Janela 4 */}
+          {overhangProperties['window-4']?.enabled && (
+            <mesh
+              position={[
+                -width / 2 - (overhangProperties['window-4']?.depth || 0.5) / 2, 
+                (windowDimensions['window-4']?.sillHeight || 1.0) + (windowDimensions['window-4']?.height || 1.1) + 0.05, 
+                ((overhangProperties['window-4']?.extensionLeft || 0.2) - (overhangProperties['window-4']?.extensionRight || 0.2)) / 2
+              ]}
+              rotation={[0, -Math.PI / 2, 0]}
+            >
+              <boxGeometry args={[
+                (windowDimensions['window-4']?.width || 1.5) + (overhangProperties['window-4']?.extensionLeft || 0.2) + (overhangProperties['window-4']?.extensionRight || 0.2),
+                0.1,
+                overhangProperties['window-4']?.depth || 0.5
+              ]} />
+              <meshStandardMaterial color="#cccccc" />
+            </mesh>
+          )}
+        </>
+      )}
     </group>
   );
 };

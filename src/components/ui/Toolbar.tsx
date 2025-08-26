@@ -6,9 +6,11 @@ import {
   BiRun, 
   BiCompass, 
   BiReset,
-  BiHelpCircle
+  BiHelpCircle,
+  BiCode
 } from 'react-icons/bi';
 import { useStore } from '../../store';
+import { testIdfGenerator } from '../../utils/testIdfGenerator';
 
 const ToolbarContainer = styled.div`
   display: flex;
@@ -95,6 +97,11 @@ const Toolbar = () => {
     }
   };
   
+  const handleTestIdf = () => {
+    console.log('🧪 Iniciando teste do gerador IDF...');
+    testIdfGenerator();
+  };
+  
   // Função para trigger file input para importação
   const handleImportClick = () => {
     document.getElementById('file-upload')?.click();
@@ -158,6 +165,11 @@ const Toolbar = () => {
         <ToolButton onClick={exportToIdf} title="Exportar para IDF (EnergyPlus)">
           <BiExport />
           IDF
+        </ToolButton>
+        
+        <ToolButton onClick={handleTestIdf} title="Testar Gerador IDF">
+          <BiCode />
+          Teste
         </ToolButton>
         
         <ToolButton primary onClick={runSimulation} title="Executar Simulação">

@@ -1,50 +1,7 @@
 /**
  * Serviço para geração de arquivos IDF para o EnergyPlus
  */
-import type { Dimensions, Materials, LocationData } from '../types';
-
-// Interface para dimensões das janelas
-interface WindowDimensions {
-  width: number;
-  height: number;
-  sillHeight: number;
-  enabled: boolean;
-}
-
-/**
- * Extrai dados de localização de um arquivo EPW
- * @param epwContent - Conteúdo do arquivo EPW como string
- * @returns Dados de localização extraídos
- */
-export const parseEpwLocation = (epwContent: string): LocationData | null => {
-  try {
-    const lines = epwContent.split('\n');
-    // A linha LOCATION é geralmente a primeira linha do EPW
-    const locationLine = lines.find(line => line.startsWith('LOCATION'));
-    
-    if (!locationLine) {
-      return null;
-    }
-    
-    // Formato típico: LOCATION,Name,State,Country,Source,WMO#,Latitude,Longitude,TimeZone,Elevation
-    const parts = locationLine.split(',');
-    
-    if (parts.length >= 10) {
-      return {
-        name: parts[1].trim(),
-        latitude: parseFloat(parts[6]),
-        longitude: parseFloat(parts[7]), 
-        timezone: parseFloat(parts[8]),
-        elevation: parseFloat(parts[9])
-      };
-    }
-    
-    return null;
-  } catch (error) {
-    console.error('Erro ao parsear dados de localização do EPW:', error);
-    return null;
-  }
-};
+import type { Dimensions, Materials } from '../types';
 
 /**
  * Gera um arquivo IDF completo para o EnergyPlus com base nas dimensões do modelo,
@@ -53,16 +10,12 @@ export const parseEpwLocation = (epwContent: string): LocationData | null => {
  * @param dimensions - Dimensões da zona
  * @param northAngle - Ângulo do norte em radianos
  * @param materials - Materiais utilizados
- * @param windowDimensions - Dimensões e configurações das janelas
- * @param locationData - Dados de localização do arquivo EPW (opcional)
  * @returns Conteúdo do arquivo IDF como string
  */
 export const generateIdf = (
   dimensions: Dimensions, 
   northAngle: number, 
-  materials: Materials,
-  windowDimensions: Record<string, WindowDimensions>,
-  locationData?: LocationData
+  materials: Materials
 ): string => {
   const { width, length, height } = dimensions;
   const northDeg = (northAngle * 180 / Math.PI) % 360;
@@ -83,88 +36,11 @@ export const generateIdf = (
                            materials.wall === 'concrete' ? 'Concrete Wall' :
                            materials.wall === 'wood' ? 'Wood Wall' : 'Project wall';
                            
-  const windowConstruction = materials.window === 'single_clear' ? '1001' : 
-                             materials.window === 'double_clear' ? '1001' : '1001';
-
-  // Mapeamento entre IDs das janelas e suas orientações/paredes
-  const windowMapping = {
-    'window-1': { wall: 'Wall South', orientation: 'south' },
-    'window-2': { wall: 'Wall North', orientation: 'north' },
-    'window-3': { wall: 'Wall East', orientation: 'east' },
-    'window-4': { wall: 'Wall West', orientation: 'west' }
-  };
-
-  // Função para gerar uma janela se ela estiver habilitada
-  const generateWindow = (windowId: string): string => {
-    const windowData = windowDimensions[windowId];
-    const wallInfo = windowMapping[windowId as keyof typeof windowMapping];
-    
-    if (!windowData || !windowData.enabled || !wallInfo) {
-      return '';
-    }
-
-    const { width: winWidth, height: winHeight, sillHeight } = windowData;
-    const halfWidth = winWidth / 2;
-    const windowTop = sillHeight + winHeight;
-
-    let vertices = '';
-    switch (wallInfo.orientation) {
-      case 'south':
-        vertices = `
-    ${formatNum(-halfWidth)}, ${formatNum(y2)}, ${formatNum(sillHeight)},   !- Vertex 1
-    ${formatNum(halfWidth)}, ${formatNum(y2)}, ${formatNum(sillHeight)},    !- Vertex 2
-    ${formatNum(halfWidth)}, ${formatNum(y2)}, ${formatNum(windowTop)},     !- Vertex 3
-    ${formatNum(-halfWidth)}, ${formatNum(y2)}, ${formatNum(windowTop)};    !- Vertex 4`;
-        break;
-      case 'north':
-        vertices = `
-    ${formatNum(halfWidth)}, ${formatNum(y1)}, ${formatNum(sillHeight)},    !- Vertex 1
-    ${formatNum(-halfWidth)}, ${formatNum(y1)}, ${formatNum(sillHeight)},   !- Vertex 2
-    ${formatNum(-halfWidth)}, ${formatNum(y1)}, ${formatNum(windowTop)},    !- Vertex 3
-    ${formatNum(halfWidth)}, ${formatNum(y1)}, ${formatNum(windowTop)};     !- Vertex 4`;
-        break;
-      case 'east':
-        vertices = `
-    ${formatNum(x2)}, ${formatNum(-halfWidth)}, ${formatNum(sillHeight)},   !- Vertex 1
-    ${formatNum(x2)}, ${formatNum(halfWidth)}, ${formatNum(sillHeight)},    !- Vertex 2
-    ${formatNum(x2)}, ${formatNum(halfWidth)}, ${formatNum(windowTop)},     !- Vertex 3
-    ${formatNum(x2)}, ${formatNum(-halfWidth)}, ${formatNum(windowTop)};    !- Vertex 4`;
-        break;
-      case 'west':
-        vertices = `
-    ${formatNum(x1)}, ${formatNum(halfWidth)}, ${formatNum(sillHeight)},    !- Vertex 1
-    ${formatNum(x1)}, ${formatNum(-halfWidth)}, ${formatNum(sillHeight)},   !- Vertex 2
-    ${formatNum(x1)}, ${formatNum(-halfWidth)}, ${formatNum(windowTop)},    !- Vertex 3
-    ${formatNum(x1)}, ${formatNum(halfWidth)}, ${formatNum(windowTop)};     !- Vertex 4`;
-        break;
-    }
-
-    return `
-! Window ${wallInfo.orientation.charAt(0).toUpperCase() + wallInfo.orientation.slice(1)}
-FenestrationSurface:Detailed, Window ${wallInfo.orientation.charAt(0).toUpperCase() + wallInfo.orientation.slice(1)},      !- Window name
-   Window,                                        !- Class
-   ${windowConstruction},                         !- Construction Name
-   ${wallInfo.wall},                              !- Base surface
-   ,                                              !- corresponding other window subsurface
-   AutoCalculate,                                 !- View Factor to Ground
-   ,                                              !- Window shading control
-   ,                                              !- Frame divider name
-   1,                                             !- Multiplier
-   4,                                             !- Number vertices${vertices}
-`;
-  };
+  const windowConstruction = materials.window === 'single_clear' ? 'Single Clear' : 
+                             materials.window === 'double_clear' ? '1001' : 'Single Clear';
                              
   const floorConstruction = materials.surface === 'tile' ? 'Project ground floor' : 
                            materials.surface === 'carpet' ? 'Floor Carpet' : 'Project ground floor';
-
-  // Usar dados de localização do EPW se disponíveis, senão usar dados padrão
-  const location = locationData || {
-    name: 'Tropos3D Model',
-    latitude: -23.55,
-    longitude: -46.64,
-    timezone: -3,
-    elevation: 720
-  };
 
   // Construir o arquivo IDF
   const idf = `! File generated by Tropos3D
@@ -184,18 +60,18 @@ RunPeriod,                                        !- Annual simulation
    Yes,                                           !- use weather file snow indicators
    1;                                             !- Number of years in simulation
 
-Site:Location,${location.name},                      !- Location Name
-   ${formatNum(location.latitude)},               !- Latitude
-   ${formatNum(location.longitude)},              !- Longitude
-   ${formatNum(location.timezone)},               !- Time Zone
-   ${formatNum(location.elevation)};              !- Elevation {m}
+Site:Location,Tropos3D Model,                     !- Location Name
+   -23.55,                                        !- Latitude
+   -46.64,                                        !- Longitude
+   -3,                                            !- Time Zone
+   720;                                           !- Elevation {m}
 
 Site:GroundTemperature:BuildingSurface,           !- Annual ground temperatures
    18,18,18,18,18,18,18,18,18,18,18,18;           !- Monthly ground temperatures
 
 SimulationControl,
-   No,                                            !- Do the zone sizing calculation
-   No,                                            !- Do the system sizing calculation
+   Yes,                                           !- Do the zone sizing calculation
+   Yes,                                           !- Do the system sizing calculation
    No,                                            !- Do the plant sizing calculation
    No,                                            !- Do the design day calculation
    Yes;                                           !- Do the weather file calculation
@@ -254,7 +130,7 @@ SizingPeriod:DesignDay, Winter Design Day,        !- Design Day Name
    ,                                              !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
    0.0;                                           !- Sky Clearness
 
-Timestep, 4;                                      !- Timesteps/hour
+Timestep, 2;                                      !- Timesteps/hour
 
 ScheduleTypeLimits, Any Number;                   !- Not limited
 ScheduleTypeLimits, Fraction,     0.0, 1.0, CONTINUOUS;
@@ -324,6 +200,9 @@ Construction, Project wall,
 Construction, Project ground floor,
    Concrete;                                      !- Outside Layer
 
+Construction, Single Clear,
+   Clear3mm;                                      !- Outside Layer
+
 Construction, 1001,                               !- Double glazing
    Clear3mm,                                      !- Outer glass
    Air13mm,                                       !- Air gap
@@ -377,9 +256,9 @@ BuildingSurface:Detailed,                        !- Surface
    AutoCalculate,                                 !- View Factor to Ground
    4,                                             !- Number vertices
     ${formatNum(x1)}, ${formatNum(y1)}, ${formatNum(z1)},  !- Vertex 1
-    ${formatNum(x1)}, ${formatNum(y2)}, ${formatNum(z1)},  !- Vertex 2
+    ${formatNum(x2)}, ${formatNum(y1)}, ${formatNum(z1)},  !- Vertex 2
     ${formatNum(x2)}, ${formatNum(y2)}, ${formatNum(z1)},  !- Vertex 3
-    ${formatNum(x2)}, ${formatNum(y1)}, ${formatNum(z1)};  !- Vertex 4
+    ${formatNum(x1)}, ${formatNum(y2)}, ${formatNum(z1)};  !- Vertex 4
 
 ! Roof
 BuildingSurface:Detailed,                        !- Surface
@@ -391,10 +270,10 @@ BuildingSurface:Detailed,                        !- Surface
    WindExposed,                                   !- Wind Exposure
    AutoCalculate,                                 !- View Factor to Ground
    4,                                             !- Number vertices
-    ${formatNum(x2)}, ${formatNum(y1)}, ${formatNum(z2)},  !- Vertex 1
-    ${formatNum(x2)}, ${formatNum(y2)}, ${formatNum(z2)},  !- Vertex 2
-    ${formatNum(x1)}, ${formatNum(y2)}, ${formatNum(z2)},  !- Vertex 3
-    ${formatNum(x1)}, ${formatNum(y1)}, ${formatNum(z2)};  !- Vertex 4
+    ${formatNum(x1)}, ${formatNum(y1)}, ${formatNum(z2)},  !- Vertex 1
+    ${formatNum(x1)}, ${formatNum(y2)}, ${formatNum(z2)},  !- Vertex 2
+    ${formatNum(x2)}, ${formatNum(y2)}, ${formatNum(z2)},  !- Vertex 3
+    ${formatNum(x2)}, ${formatNum(y1)}, ${formatNum(z2)};  !- Vertex 4
 
 ! Wall South (Y positive)
 BuildingSurface:Detailed,                        !- Surface
@@ -406,11 +285,27 @@ BuildingSurface:Detailed,                        !- Surface
    WindExposed,                                   !- Wind Exposure
    AutoCalculate,                                 !- View Factor to Ground
    4,                                             !- Number vertices
-    ${formatNum(x1)}, ${formatNum(y2)}, ${formatNum(z1)},  !- Vertex 1
-    ${formatNum(x2)}, ${formatNum(y2)}, ${formatNum(z1)},  !- Vertex 2
-    ${formatNum(x2)}, ${formatNum(y2)}, ${formatNum(z2)},  !- Vertex 3
-    ${formatNum(x1)}, ${formatNum(y2)}, ${formatNum(z2)};  !- Vertex 4
-${generateWindow('window-1')}
+    ${formatNum(x2)}, ${formatNum(y2)}, ${formatNum(z1)},  !- Vertex 1
+    ${formatNum(x1)}, ${formatNum(y2)}, ${formatNum(z1)},  !- Vertex 2
+    ${formatNum(x1)}, ${formatNum(y2)}, ${formatNum(z2)},  !- Vertex 3
+    ${formatNum(x2)}, ${formatNum(y2)}, ${formatNum(z2)};  !- Vertex 4
+
+! Window South
+FenestrationSurface:Detailed, Window South,      !- Window name
+   Window,                                        !- Class
+   ${windowConstruction},                         !- Construction Name
+   Wall South,                                    !- Base surface
+   ,                                              !- corresponding other window subsurface
+   AutoCalculate,                                 !- View Factor to Ground
+   ,                                              !- Window shading control
+   ,                                              !- Frame divider name
+   1,                                             !- Multiplier
+   4,                                             !- Number vertices
+    ${formatNum(-0.75)}, ${formatNum(y2)}, ${formatNum(0.84)},   !- Vertex 1
+    ${formatNum(0.75)}, ${formatNum(y2)}, ${formatNum(0.84)},    !- Vertex 2
+    ${formatNum(0.75)}, ${formatNum(y2)}, ${formatNum(2.26)},    !- Vertex 3
+    ${formatNum(-0.75)}, ${formatNum(y2)}, ${formatNum(2.26)};   !- Vertex 4
+
 ! Wall North (Y negative)
 BuildingSurface:Detailed,                        !- Surface
    Wall North,                                    !- Surface name
@@ -421,11 +316,26 @@ BuildingSurface:Detailed,                        !- Surface
    WindExposed,                                   !- Wind Exposure
    AutoCalculate,                                 !- View Factor to Ground
    4,                                             !- Number vertices
-    ${formatNum(x2)}, ${formatNum(y1)}, ${formatNum(z1)},  !- Vertex 1
-    ${formatNum(x1)}, ${formatNum(y1)}, ${formatNum(z1)},  !- Vertex 2
-    ${formatNum(x1)}, ${formatNum(y1)}, ${formatNum(z2)},  !- Vertex 3
-    ${formatNum(x2)}, ${formatNum(y1)}, ${formatNum(z2)};  !- Vertex 4
-${generateWindow('window-2')}
+    ${formatNum(x1)}, ${formatNum(y1)}, ${formatNum(z1)},  !- Vertex 1
+    ${formatNum(x2)}, ${formatNum(y1)}, ${formatNum(z1)},  !- Vertex 2
+    ${formatNum(x2)}, ${formatNum(y1)}, ${formatNum(z2)},  !- Vertex 3
+    ${formatNum(x1)}, ${formatNum(y1)}, ${formatNum(z2)};  !- Vertex 4
+
+! Window North
+FenestrationSurface:Detailed, Window North,      !- Window name
+   Window,                                        !- Class
+   ${windowConstruction},                         !- Construction Name
+   Wall North,                                    !- Base surface
+   ,                                              !- corresponding other window subsurface
+   AutoCalculate,                                 !- View Factor to Ground
+   ,                                              !- Window shading control
+   ,                                              !- Frame divider name
+   1,                                             !- Multiplier
+   4,                                             !- Number vertices
+    ${formatNum(0.75)}, ${formatNum(y1)}, ${formatNum(0.84)},    !- Vertex 1
+    ${formatNum(-0.75)}, ${formatNum(y1)}, ${formatNum(0.84)},   !- Vertex 2
+    ${formatNum(-0.75)}, ${formatNum(y1)}, ${formatNum(2.26)},   !- Vertex 3
+    ${formatNum(0.75)}, ${formatNum(y1)}, ${formatNum(2.26)};    !- Vertex 4
 
 ! Wall East (X positive)
 BuildingSurface:Detailed,                        !- Surface
@@ -441,7 +351,23 @@ BuildingSurface:Detailed,                        !- Surface
     ${formatNum(x2)}, ${formatNum(y2)}, ${formatNum(z1)},  !- Vertex 2
     ${formatNum(x2)}, ${formatNum(y2)}, ${formatNum(z2)},  !- Vertex 3
     ${formatNum(x2)}, ${formatNum(y1)}, ${formatNum(z2)};  !- Vertex 4
-${generateWindow('window-3')}
+
+! Window East
+FenestrationSurface:Detailed, Window East,       !- Window name
+   Window,                                        !- Class
+   ${windowConstruction},                         !- Construction Name
+   Wall East,                                     !- Base surface
+   ,                                              !- corresponding other window subsurface
+   AutoCalculate,                                 !- View Factor to Ground
+   ,                                              !- Window shading control
+   ,                                              !- Frame divider name
+   1,                                             !- Multiplier
+   4,                                             !- Number vertices
+    ${formatNum(x2)}, ${formatNum(-0.75)}, ${formatNum(0.84)},   !- Vertex 1
+    ${formatNum(x2)}, ${formatNum(0.75)}, ${formatNum(0.84)},    !- Vertex 2
+    ${formatNum(x2)}, ${formatNum(0.75)}, ${formatNum(2.26)},    !- Vertex 3
+    ${formatNum(x2)}, ${formatNum(-0.75)}, ${formatNum(2.26)};   !- Vertex 4
+
 ! Wall West (X negative)
 BuildingSurface:Detailed,                        !- Surface
    Wall West,                                     !- Surface name
@@ -456,7 +382,22 @@ BuildingSurface:Detailed,                        !- Surface
     ${formatNum(x1)}, ${formatNum(y1)}, ${formatNum(z1)},  !- Vertex 2
     ${formatNum(x1)}, ${formatNum(y1)}, ${formatNum(z2)},  !- Vertex 3
     ${formatNum(x1)}, ${formatNum(y2)}, ${formatNum(z2)};  !- Vertex 4
-${generateWindow('window-4')}
+
+! Window West
+FenestrationSurface:Detailed, Window West,       !- Window name
+   Window,                                        !- Class
+   ${windowConstruction},                         !- Construction Name
+   Wall West,                                     !- Base surface
+   ,                                              !- corresponding other window subsurface
+   AutoCalculate,                                 !- View Factor to Ground
+   ,                                              !- Window shading control
+   ,                                              !- Frame divider name
+   1,                                             !- Multiplier
+   4,                                             !- Number vertices
+    ${formatNum(x1)}, ${formatNum(0.75)}, ${formatNum(0.84)},    !- Vertex 1
+    ${formatNum(x1)}, ${formatNum(-0.75)}, ${formatNum(0.84)},   !- Vertex 2
+    ${formatNum(x1)}, ${formatNum(-0.75)}, ${formatNum(2.26)},   !- Vertex 3
+    ${formatNum(x1)}, ${formatNum(0.75)}, ${formatNum(2.26)};    !- Vertex 4
 
 ! Outputs
 Output:Variable, *, Zone Mean Air Temperature, hourly, ;

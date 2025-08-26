@@ -3,6 +3,7 @@ import Canvas3D from './components/3d/Canvas3D';
 import PropertiesPanel from './components/ui/PropertiesPanel';
 import ElementTree from './components/ui/ElementTree';
 import Toolbar from './components/ui/Toolbar';
+import { testIdfGenerator } from './utils/testIdfGenerator';
 
 const AppContainer = styled.div`
   display: flex;
