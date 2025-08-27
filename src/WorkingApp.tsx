@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import SimpleToolbar from './components/ui/SimpleToolbar';
 import BasicCanvas3D from './components/3d/BasicCanvas3D';
-import BasicPropertiesPanel from './components/ui/BasicPropertiesPanel';
+import TabbedRightPanel from './components/ui/TabbedRightPanel';
 import BasicElementTree from './components/ui/BasicElementTree';
 
 const AppContainer = styled.div`
@@ -57,7 +57,7 @@ const WorkingApp = () => {
           <BasicCanvas3D />
         </CanvasContainer>
         <RightPanelContainer>
-          <BasicPropertiesPanel />
+          <TabbedRightPanel />
         </RightPanelContainer>
       </MainContent>
     </AppContainer>

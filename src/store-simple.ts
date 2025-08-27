@@ -69,6 +69,9 @@ interface Store {
   simulationHistory: SimulationResult[];
   isSimulating: boolean;
   
+  // Estado da UI
+  activeRightPanelTab: 'properties' | 'results';
+  
   // Ações
   setSelectedElement: (element: Element | null) => void;
   setDimensions: (dimensions: Dimensions) => void;
@@ -87,6 +90,9 @@ interface Store {
   setCurrentSimulation: (simulation: SimulationResult | null) => void;
   addToSimulationHistory: (simulation: SimulationResult) => void;
   setIsSimulating: (isSimulating: boolean) => void;
+  
+  // Ações da UI
+  setActiveRightPanelTab: (tab: 'properties' | 'results') => void;
   
   // Funções de utilidade
   resetModel: () => void;
@@ -159,6 +165,9 @@ export const useStore = create<Store>((set, get) => ({
   simulationHistory: [],
   isSimulating: false,
   
+  // Estado da UI
+  activeRightPanelTab: 'properties',
+  
   // Ações
   setSelectedElement: (element) => set({ selectedElement: element }),
   setDimensions: (dimensions) => set({ dimensions }),
@@ -185,6 +194,9 @@ export const useStore = create<Store>((set, get) => ({
     simulationHistory: [simulation, ...get().simulationHistory.slice(0, 9)] // Manter apenas 10 últimas
   }),
   setIsSimulating: (isSimulating) => set({ isSimulating }),
+  
+  // Ações da UI
+  setActiveRightPanelTab: (tab) => set({ activeRightPanelTab: tab }),
   
   // Funções de utilidade
   resetModel: () => set({ 
@@ -253,6 +265,8 @@ export const useStore = create<Store>((set, get) => ({
     try {
       // Verificar se o servidor está disponível
       state.setIsSimulating(true);
+      // Mudar para a aba de resultados quando iniciar simulação
+      state.setActiveRightPanelTab('results');
       
       try {
         await energyPlusService.checkHealth();

@@ -1,14 +1,12 @@
 import styled from 'styled-components';
 import { useStore } from '../../store-simple';
-import SimulationResults from './SimulationResults';
 import { 
   BiCube, 
   BiLayer, 
   BiWindow, 
   BiRectangle, 
   BiEdit,
-  BiRuler,
-  BiBuilding
+  BiRuler
 } from 'react-icons/bi';
 
 const PanelContainer = styled.div`
@@ -272,7 +270,7 @@ const BasicPropertiesPanel = () => {
   let icon;
   switch (selectedElement.type) {
     case 'building':
-      icon = <BiBuilding size={18} />;
+      icon = <BiCube size={18} />;
       break;
     case 'zone':
       icon = <BiCube size={18} />;
@@ -812,15 +810,6 @@ const BasicPropertiesPanel = () => {
           )}
         </PropertyGroup>
       )}
-
-      {/* Resultados da Simulação */}
-      <PropertyGroup>
-        <GroupTitle>
-          <BiBuilding />
-          Resultados da Simulação
-        </GroupTitle>
-        <SimulationResults />
-      </PropertyGroup>
     </PanelContainer>
   );
 };
