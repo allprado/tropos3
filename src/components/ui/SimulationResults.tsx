@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { useStore } from '../../store-simple';
+import { energyPlusService } from '../../services/energyPlusService';
 
 const ResultsContainer = styled.div`
   flex: 1;
@@ -102,6 +103,23 @@ const SimulationResults: React.FC = () => {
     }
   };
 
+  const handleDownloadFile = async (simulationId: string, fileName: string) => {
+    try {
+      await energyPlusService.downloadFile(simulationId, fileName);
+    } catch (error) {
+      alert(`Erro ao baixar arquivo: ${error}`);
+    }
+  };
+
+  const parseTemperatureData = (csvContent: string) => {
+    try {
+      return energyPlusService.parseCsvResults(csvContent);
+    } catch (error) {
+      console.error('Erro ao parsear dados de temperatura:', error);
+      return [];
+    }
+  };
+
   if (!currentSimulation && simulationHistory.length === 0 && !isSimulating) {
     return (
       <EmptyState>
@@ -141,6 +159,75 @@ const SimulationResults: React.FC = () => {
             <StatusSubtitle>
               Iniciada em: {new Date(currentSimulation.startTime).toLocaleString()}
             </StatusSubtitle>
+          )}
+
+          {/* Mostrar arquivos para download quando finalizada */}
+          {currentSimulation.status === 'completed' && currentSimulation.outputs && (
+            <div style={{ marginTop: '10px' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '12px' }}>
+                📁 Arquivos Disponíveis:
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {currentSimulation.outputs.err && (
+                  <button
+                    onClick={() => handleDownloadFile(currentSimulation.id, 'eplusoutout.err')}
+                    style={{ padding: '6px 10px', fontSize: '12px', borderRadius: '6px', background: '#6c757d', color: '#fff', border: 'none', cursor: 'pointer' }}
+                  >
+                    Log (.err)
+                  </button>
+                )}
+
+                {currentSimulation.outputs.csv && (
+                  <button
+                    onClick={() => handleDownloadFile(currentSimulation.id, 'eplusoutout.csv')}
+                    style={{ padding: '6px 10px', fontSize: '12px', borderRadius: '6px', background: '#28a745', color: '#fff', border: 'none', cursor: 'pointer' }}
+                  >
+                    Dados (.csv)
+                  </button>
+                )}
+
+                {currentSimulation.outputs.html && (
+                  <>
+                    <button
+                      onClick={() => handleDownloadFile(currentSimulation.id, 'eplustblout.htm')}
+                      style={{ padding: '6px 10px', fontSize: '12px', borderRadius: '6px', background: '#007bff', color: '#fff', border: 'none', cursor: 'pointer' }}
+                    >
+                      Relatório (tbl.htm)
+                    </button>
+                    <button
+                      onClick={() => handleDownloadFile(currentSimulation.id, 'eplusoutout.htm')}
+                      style={{ padding: '6px 10px', fontSize: '12px', borderRadius: '6px', background: '#0056b3', color: '#fff', border: 'none', cursor: 'pointer' }}
+                    >
+                      Relatório (out.htm)
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Resumo rápido dos dados de temperatura se CSV presente */}
+              {currentSimulation.outputs.csv && (
+                <div style={{ marginTop: '10px', fontSize: '12px', color: '#555' }}>
+                  <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>🌡️ Dados de Temperatura:</div>
+                  {(() => {
+                    const tempData = parseTemperatureData(currentSimulation.outputs.csv as string);
+                    if (tempData.length > 0) {
+                      const avgTemp = tempData.reduce((sum, d) => sum + d.temperature, 0) / tempData.length;
+                      const minTemp = Math.min(...tempData.map(d => d.temperature));
+                      const maxTemp = Math.max(...tempData.map(d => d.temperature));
+
+                      return (
+                        <div style={{ color: '#666' }}>
+                          <div>Média: {avgTemp.toFixed(1)}°C</div>
+                          <div>Mín: {minTemp.toFixed(1)}°C | Máx: {maxTemp.toFixed(1)}°C</div>
+                          <div>Pontos: {tempData.length}</div>
+                        </div>
+                      );
+                    }
+                    return <div style={{ color: '#999' }}>Nenhum dado de temperatura encontrado</div>;
+                  })()}
+                </div>
+              )}
+            </div>
           )}
         </StatusCard>
       )}
