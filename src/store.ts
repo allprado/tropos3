@@ -141,8 +141,14 @@ export const useStore = create<Store>((set, get) => ({
   exportToIdf: () => {
     const { dimensions, northAngle, materials } = get();
     
-    // Gerar o IDF usando o serviço
-    const idfContent = generateIdf(dimensions, northAngle, materials);
+    // Gerar o IDF usando o serviço (usando valores padrão para windowDimensions)
+    const defaultWindowDimensions = {
+      'window-1': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
+      'window-2': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
+      'window-3': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
+      'window-4': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
+    };
+    const idfContent = generateIdf(dimensions, northAngle, materials, defaultWindowDimensions);
     
     // Download do arquivo IDF
     const dataUri = 'data:text/plain;charset=utf-8,'+ encodeURIComponent(idfContent);
@@ -159,8 +165,14 @@ export const useStore = create<Store>((set, get) => ({
     try {
       const { dimensions, northAngle, materials } = get();
       
-      // Gerar o IDF
-      const idfContent = generateIdf(dimensions, northAngle, materials);
+      // Gerar o IDF (usando valores padrão para windowDimensions)
+      const defaultWindowDimensions = {
+        'window-1': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
+        'window-2': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
+        'window-3': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
+        'window-4': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
+      };
+      const idfContent = generateIdf(dimensions, northAngle, materials, defaultWindowDimensions);
       
       // Executar a simulação via API JessWeb
       const results = await runJessWebSimulation(idfContent);

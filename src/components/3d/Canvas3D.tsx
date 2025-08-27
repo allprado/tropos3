@@ -1,13 +1,11 @@
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Grid, Edges } from '@react-three/drei';
+import { OrbitControls, Grid } from '@react-three/drei';
 import { useStore } from '../../store';
 import Zone from './Zone';
 import NorthIndicator from './NorthIndicator';
-import { useState } from 'react';
 
 const Canvas3D = () => {
   const { northAngle } = useStore();
-  const [rotation, setRotation] = useState(0);
   
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -31,7 +29,6 @@ const Canvas3D = () => {
           enablePan={true}
           enableZoom={true}
           enableRotate={true}
-          onChange={(e) => setRotation(e.target.getAzimuthalAngle())}
         />
         <Grid 
           renderOrder={-1}

@@ -1,7 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
 import { useStore } from '../../store-simple';
-import { energyPlusService } from '../../services/energyPlusService';
 
 const ResultsContainer = styled.div`
   flex: 1;
@@ -74,14 +73,6 @@ const SimulationResults: React.FC = () => {
     simulationHistory, 
     isSimulating 
   } = useStore();
-
-  const handleDownloadFile = async (simulationId: string, fileName: string) => {
-    try {
-      await energyPlusService.downloadFile(simulationId, fileName);
-    } catch (error) {
-      alert(`Erro ao baixar arquivo: ${error}`);
-    }
-  };
 
   const formatDuration = (start: string, end?: string) => {
     if (!end) return 'Em andamento...';

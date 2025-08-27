@@ -6,7 +6,6 @@ import {
   BiRun, 
   BiCompass, 
   BiReset,
-  BiHelpCircle,
   BiCode
 } from 'react-icons/bi';
 import { useStore } from '../../store';

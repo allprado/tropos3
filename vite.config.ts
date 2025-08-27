@@ -7,8 +7,6 @@ export default defineConfig({
   server: {
     host: true,
     port: 5178,
-    // Aumentar o timeout para evitar erros 504
-    timeout: 120000,
     // Configurar HMR para GitHub Codespaces
     hmr: {
       port: 5178,

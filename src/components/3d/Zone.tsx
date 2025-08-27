@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { Box, Edges } from '@react-three/drei';
+import { Box } from '@react-three/drei';
 import { useStore } from '../../store';
 import { Mesh } from 'three';
 import Wall from './Wall';

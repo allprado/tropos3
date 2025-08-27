@@ -1,6 +1,5 @@
 import styled from 'styled-components';
 import { useStore } from '../../store';
-import { useState } from 'react';
 import { 
   BiCube, 
   BiLayer, 

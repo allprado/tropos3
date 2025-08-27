@@ -21,7 +21,13 @@ export const testIdfGenerator = () => {
   console.log('🧭 Ângulo Norte:', testNorthAngle, 'radianos');
 
   try {
-    const idfContent = generateIdf(testDimensions, testNorthAngle, testMaterials);
+    const testWindowDimensions = {
+      'window-1': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
+      'window-2': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
+      'window-3': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
+      'window-4': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
+    };
+    const idfContent = generateIdf(testDimensions, testNorthAngle, testMaterials, testWindowDimensions);
     
     console.log('✅ IDF gerado com sucesso!');
     
