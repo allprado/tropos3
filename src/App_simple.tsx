@@ -6,37 +6,41 @@ import Toolbar from './components/ui/Toolbar';
 function App() {
   return (
     <div style={{
-      display: 'flex',
-      flexDirection: 'column',
       height: '100vh',
       width: '100vw',
-      overflow: 'hidden',
       backgroundColor: '#f9f9f9',
+      color: '#333',
+      overflow: 'hidden'
     }}>
-      <div style={{ height: '60px', flexShrink: 0 }}>
+      <div style={{ height: '60px' }}>
         <Toolbar />
       </div>
       
       <div style={{
         display: 'flex',
-        flex: '1 1 auto',
+        height: 'calc(100vh - 60px)',
         width: '100%',
-  overflowX: 'hidden',
+        minWidth: '880px',
+        overflowX: 'auto'
       }}>
         {/* Painel Esquerdo - LARGURA FIXA */}
         <div style={{
           width: '280px',
-          flex: '0 0 280px',
+          minWidth: '280px',
+          maxWidth: '280px',
+          height: '100%',
+          flexShrink: 0,
+          flexGrow: 0
         }}>
           <LeftPanel />
         </div>
         
         {/* Canvas Central - FLEXÍVEL */}
         <div style={{
-          flex: '1 1 auto',
+          flex: 1,
+          height: '100%',
           position: 'relative',
-          overflow: 'hidden',
-          minWidth: 0,
+          overflow: 'hidden'
         }}>
           <Canvas3D />
         </div>
@@ -44,7 +48,11 @@ function App() {
         {/* Painel Direito - LARGURA FIXA */}
         <div style={{
           width: '300px',
-          flex: '0 0 300px',
+          minWidth: '300px',
+          maxWidth: '300px',
+          height: '100%',
+          flexShrink: 0,
+          flexGrow: 0
         }}>
           <RightPanel />
         </div>
@@ -53,4 +61,4 @@ function App() {
   )
 }
 
-export default App;
+export default App

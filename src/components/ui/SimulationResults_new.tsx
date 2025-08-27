@@ -1,10 +1,10 @@
 import React from 'react';
 import styled from 'styled-components';
 import { useStore } from '../../store-simple';
+import { energyPlusService } from '../../services/energyPlusService';
 
 const ResultsContainer = styled.div`
   flex: 1;
-  min-width: 0;
   overflow-y: auto;
   padding: 1rem;
   display: flex;
@@ -26,7 +26,6 @@ const EmptyState = styled.div`
   color: #666;
   font-style: italic;
   line-height: 1.5;
-  min-width: 0;
 `;
 
 const StatusCard = styled.div<{ status: string }>`
@@ -49,9 +48,6 @@ const StatusCard = styled.div<{ status: string }>`
       default: return '#ddd';
     }
   }};
-  min-width: 0;
-  word-break: break-word;
-  overflow-wrap: anywhere;
 `;
 
 const StatusTitle = styled.div<{ status: string }>`
@@ -78,6 +74,14 @@ const SimulationResults: React.FC = () => {
     simulationHistory, 
     isSimulating 
   } = useStore();
+
+  const handleDownloadFile = async (simulationId: string, fileName: string) => {
+    try {
+      await energyPlusService.downloadFile(simulationId, fileName);
+    } catch (error) {
+      alert(`Erro ao baixar arquivo: ${error}`);
+    }
+  };
 
   const formatDuration = (start: string, end?: string) => {
     if (!end) return 'Em andamento...';
@@ -113,7 +117,7 @@ const SimulationResults: React.FC = () => {
   }
 
   return (
-    <ResultsContainer className="results-container">
+    <ResultsContainer>
       <ResultsTitle>
         📊 Resultados da Simulação
       </ResultsTitle>

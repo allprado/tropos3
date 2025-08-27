@@ -12,7 +12,13 @@ import { useState } from 'react';
 
 const TreeContainer = styled.div`
   padding: 1rem;
-  border-bottom: 1px solid #e0e0e0;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
 `;
 
 const TreeTitle = styled.h2`
@@ -27,6 +33,8 @@ const TreeList = styled.ul`
   list-style: none;
   padding: 0;
   margin: 0;
+  word-break: break-word;
+  min-width: 0;
 `;
 
 interface TreeItemProps {
@@ -49,6 +57,9 @@ const TreeItemContent = styled.div`
   display: flex;
   align-items: center;
   gap: 0.3rem;
+  overflow-x: hidden;
+  flex: 1 1 auto;
+  min-width: 0;
 `;
 
 const TreeItemChildren = styled.ul`
@@ -71,7 +82,7 @@ const ElementTree = () => {
   };
   
   return (
-    <TreeContainer>
+    <TreeContainer className="tree-container">
       <TreeTitle>Elementos</TreeTitle>
       
       <TreeList>

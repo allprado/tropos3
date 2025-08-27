@@ -12,10 +12,12 @@ import {
 const PanelContainer = styled.div`
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
+  box-sizing: border-box;
 `;
 
 const PanelTitle = styled.h2`
@@ -58,6 +60,8 @@ const PropertyInput = styled.input`
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 0.9rem;
+  box-sizing: border-box;
+  word-break: break-word;
   
   &:focus {
     outline: none;
@@ -72,6 +76,8 @@ const PropertySelect = styled.select`
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 0.9rem;
+  box-sizing: border-box;
+  word-break: break-word;
   
   &:focus {
     outline: none;
@@ -147,7 +153,7 @@ const PropertiesPanel = () => {
   }
   
   return (
-    <PanelContainer>
+    <PanelContainer className="properties-container">
       <PanelTitle>Propriedades</PanelTitle>
       
       <PropertyGroup>

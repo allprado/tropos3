@@ -1,0 +1,2 @@
+/* panels.css disabled: contained aggressive !important rules that conflicted with flex layout.
+   This file was renamed to avoid accidental import. If you need to re-enable, review and clean rules first. */

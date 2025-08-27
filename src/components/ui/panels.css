@@ -1,0 +1,180 @@
+/* Estilos globais para os painéis laterais */
+
+/* Garantir que os painéis mantenham suas larguras - FORÇA MÁXIMA */
+.left-panel, .right-panel {
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  position: relative;
+}
+
+/* Forçar larguras específicas */
+.left-panel {
+  width: 280px !important;
+  min-width: 280px !important;
+  max-width: 280px !important;
+}
+
+.right-panel {
+  width: 300px !important;
+  min-width: 300px !important;
+  max-width: 300px !important;
+}
+
+/* Layout principal com grid para larguras fixas */
+.main-layout {
+  display: grid !important;
+  grid-template-columns: 280px 1fr 300px !important;
+  min-width: 880px; /* 280 + 300 + mínimo 300 para canvas */
+  overflow-x: auto;
+}
+
+/* Para telas muito pequenas, usar scroll horizontal */
+@media (max-width: 880px) {
+  .app-container {
+    overflow-x: auto;
+  }
+  
+  .main-layout {
+    min-width: 880px !important;
+  }
+}
+
+/* Força as larguras no nível do DOM para ser ainda mais específico */
+.app-container .main-layout .left-panel {
+  width: 280px !important;
+  min-width: 280px !important;
+  max-width: 280px !important;
+  flex: 0 0 280px !important;
+}
+
+.app-container .main-layout .right-panel {
+  width: 300px !important;
+  min-width: 300px !important;
+  max-width: 300px !important;
+  flex: 0 0 300px !important;
+}
+
+/* Regra CSS mais específica usando atributos */
+div[class*="LeftPanelContainer"] {
+  width: 280px !important;
+  min-width: 280px !important;
+  max-width: 280px !important;
+  flex: 0 0 280px !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+}
+
+div[class*="PanelContainer"] {
+  width: 300px !important;
+  min-width: 300px !important;
+  max-width: 300px !important;
+  flex: 0 0 300px !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+}
+
+/* Forçar também via CSS */
+[class*="left-panel"], 
+[class*="right-panel"] {
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+}
+
+/* Uma regra específica para o styled-component gerado */
+div[class^="LeftPanel"] {
+  width: 280px !important;
+  flex: 0 0 280px !important;
+}
+
+div[class^="RightPanel"] {
+  width: 300px !important;
+  flex: 0 0 300px !important;
+}
+
+/* Estilos para as abas */
+.tabs-container {
+  display: flex;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #f8f9fa;
+}
+
+.tab-button {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  background-color: transparent;
+  color: #666;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 400;
+  border-bottom: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.tab-button:hover {
+  background-color: #f0f0f0;
+}
+
+.tab-button.active {
+  background-color: #fff;
+  color: #333;
+  font-weight: 600;
+  border-bottom-color: #007acc;
+}
+
+.tab-button svg {
+  font-size: 1.1rem;
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 1200px) {
+  .main-layout {
+    overflow-x: auto;
+  }
+  
+  .left-panel {
+    min-width: 250px;
+  }
+  
+  .right-panel {
+    min-width: 280px;
+  }
+}
+
+/* Para telas muito pequenas, permitir scroll horizontal */
+@media (max-width: 768px) {
+  .app-container {
+    min-width: 1000px;
+  }
+}
+
+/* Scrollbar personalizada para webkit browsers */
+.results-container::-webkit-scrollbar,
+.tree-container::-webkit-scrollbar,
+.properties-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.results-container::-webkit-scrollbar-track,
+.tree-container::-webkit-scrollbar-track,
+.properties-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.results-container::-webkit-scrollbar-thumb,
+.tree-container::-webkit-scrollbar-thumb,
+.properties-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.results-container::-webkit-scrollbar-thumb:hover,
+.tree-container::-webkit-scrollbar-thumb:hover,
+.properties-container::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
