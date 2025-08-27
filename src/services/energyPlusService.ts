@@ -4,6 +4,9 @@
 
 const API_BASE_URL = '/api';
 
+// Detectar se estamos em produção (Netlify) onde não há backend
+const isProduction = import.meta.env.PROD && window.location.hostname !== 'localhost';
+
 export interface SimulationResult {
   id: string;
   status: 'running' | 'completed' | 'error' | 'queued';
@@ -40,6 +43,11 @@ class EnergyPlusService {
    * Verifica o status do servidor EnergyPlus
    */
   async checkHealth(): Promise<HealthStatus> {
+    // Em produção (Netlify), não há backend disponível
+    if (isProduction) {
+      throw new Error('Simulações não estão disponíveis na versão online. Execute localmente para usar simulações EnergyPlus.');
+    }
+
     try {
       console.log('🔍 Iniciando verificação de health...');
       console.log('📡 URL:', `${API_BASE_URL}/health`);
@@ -72,6 +80,11 @@ class EnergyPlusService {
    * Inicia uma nova simulação
    */
   async startSimulation(request: SimulationRequest): Promise<{ simulationId: string; status: string; message: string }> {
+    // Em produção (Netlify), não há backend disponível
+    if (isProduction) {
+      throw new Error('Simulações não estão disponíveis na versão online. Execute localmente para usar simulações EnergyPlus.');
+    }
+
     try {
       const formData = new FormData();
       formData.append('idfContent', request.idfContent);

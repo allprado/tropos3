@@ -8,10 +8,13 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "compile-server": "npx tsc server/index.ts --outDir dist --target es2020 --module esnext --esModuleInterop --allowSyntheticDefaultImports --strict --skipLibCheck",
-    "server": "npm run compile-server && node dist/index.js",
-    "dev:full": "concurrently \"npm run dev\" \"npm run server\"",
-    "start": "npm run dev:full"
+    "server": "npx tsx server/index.ts",
+    "vercel-build": "npm run build && npm run server:build",
+    "server:build": "tsc server/index.ts --outDir dist/server --module commonjs --target es2018",
+    "render-build": "npm run build && chmod +x scripts/install-energyplus-render.sh && ./scripts/install-energyplus-render.sh"
+  },
+    "start": "npm run dev:full",
+    "vercel-build": "npm run build"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.4",

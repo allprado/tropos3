@@ -80,6 +80,9 @@ const SimulationResults: React.FC = () => {
     isSimulating 
   } = useStore();
 
+  // Detectar se estamos em produção (Netlify) onde não há backend
+  const isProduction = import.meta.env.PROD && window.location.hostname !== 'localhost';
+
   const formatDuration = (start: string, end?: string) => {
     if (!end) return 'Em andamento...';
     
