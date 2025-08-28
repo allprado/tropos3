@@ -1,0 +1,17 @@
+[phases.setup]
+aptPkgs = ["wget", "bash"]
+
+[phases.install]
+cmds = [
+  "npm ci",
+  "npm run build"
+]
+
+[phases.build]
+cmds = []
+
+[start]
+cmd = "npm start"
+
+[variables]
+NODE_VERSION = "20.19.0"
