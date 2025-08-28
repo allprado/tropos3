@@ -1,12 +1,44 @@
 [phases.setup]
-aptPkgs = ["wget", "bash", "curl"]
+aptPkgs = ["wget", "bash", "curl", "libgomp1", "gcc", "g++", "libc6-dev"]
 
 [phases.install]
 cmds = [
   "npm ci",
-  "chmod +x scripts/install-energyplus-alt.sh",
-  "./scripts/install-energyplus-alt.sh"
+  "chmod +x scripts/install-energyplus-8.9.sh",
+  "./scripts/install-energyplus-8.9.sh"
 ]
+
+[phases.build]
+cmds = [
+  "npm run build"
+]
+
+[start]
+cmd = "npm start"
+
+[variables]
+NODE_VERSION = "20.19.0"gs = ["wget", "bash", "curl", "libgomp1", "libgfortran5", "libquadmath0", "libc6"]
+
+[phases.setup]
+aptPkgs = ["wget", "bash", "curl", "libgomp1", "libc6", "libgcc-s1", "libstdc++6"]
+
+[phases.install]
+cmds = [
+  "npm ci",
+  "chmod +x scripts/install-energyplus-8.9.sh",
+  "./scripts/install-energyplus-8.9.sh"
+]
+
+[phases.build]
+cmds = [
+  "npm run build"
+]
+
+[start]
+cmd = "npm start"
+
+[variables]
+NODE_VERSION = "20.19.0"
 
 [phases.build]
 cmds = [
