@@ -27,6 +27,13 @@ ls -la EnergyPlus-8.9.0-40101eaafd-Linux-x86_64/
 echo "📋 Copiando arquivos..."
 cp -r EnergyPlus-8.9.0-40101eaafd-Linux-x86_64/* "$ENERGYPLUS_DIR"/
 
+# Verificar se há estrutura aninhada e corrigir
+if [ -d "$ENERGYPLUS_DIR/EnergyPlus-8-9-0" ]; then
+    echo "🔄 Detectada estrutura aninhada, movendo arquivos..."
+    mv "$ENERGYPLUS_DIR/EnergyPlus-8-9-0"/* "$ENERGYPLUS_DIR"/
+    rmdir "$ENERGYPLUS_DIR/EnergyPlus-8-9-0"
+fi
+
 # Verificar arquivos copiados
 echo "🔍 Verificando arquivos no diretório de instalação..."
 ls -la "$ENERGYPLUS_DIR"/
