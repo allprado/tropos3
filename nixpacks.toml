@@ -4,8 +4,8 @@ aptPkgs = ["wget", "bash", "curl"]
 [phases.install]
 cmds = [
   "npm ci",
-  "chmod +x scripts/install-energyplus-render.sh",
-  "./scripts/install-energyplus-render.sh"
+  "chmod +x scripts/install-energyplus-alt.sh",
+  "./scripts/install-energyplus-alt.sh"
 ]
 
 [phases.build]

@@ -15,9 +15,9 @@ wget -q https://github.com/NREL/EnergyPlus/releases/download/v22.2.0/EnergyPlus-
 # Tornar o instalador executável
 chmod +x EnergyPlus-22.2.0-c249759bad-Linux-Ubuntu20.04-x86_64.sh
 
-# Instalar EnergyPlus sem interação
+# Instalar EnergyPlus aceitando a licença automaticamente
 echo "🚀 Instalando EnergyPlus..."
-./EnergyPlus-22.2.0-c249759bad-Linux-Ubuntu20.04-x86_64.sh --skip-license --prefix=/usr/local
+echo "y" | ./EnergyPlus-22.2.0-c249759bad-Linux-Ubuntu20.04-x86_64.sh --prefix=/usr/local
 
 # Criar links simbólicos
 echo "🔗 Criando links simbólicos..."
