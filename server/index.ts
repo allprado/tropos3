@@ -59,7 +59,16 @@ const upload = multer({ storage });
 // Diretórios de trabalho
 const TEMP_DIR = path.join(__dirname, '../temp');
 const SIMULATIONS_DIR = path.join(TEMP_DIR, 'simulations');
-const ENERGYPLUS_PATH = '/usr/local/EnergyPlus-8-9-0/energyplus-8.9.0';
+
+// Tentar encontrar EnergyPlus em diferentes localizações
+const ENERGYPLUS_PATHS = [
+  '/usr/local/EnergyPlus-22-2-0/energyplus',
+  '/usr/local/bin/energyplus',
+  '/usr/bin/energyplus',
+  '/usr/local/EnergyPlus-8-9-0/energyplus-8.9.0'
+];
+
+const ENERGYPLUS_PATH = ENERGYPLUS_PATHS.find(path => fs.existsSync(path)) || ENERGYPLUS_PATHS[0];
 
 // Garantir que os diretórios existam
 fs.ensureDirSync(TEMP_DIR);

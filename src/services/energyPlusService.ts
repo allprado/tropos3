@@ -4,8 +4,11 @@
 
 const API_BASE_URL = '/api';
 
-// Detectar se estamos em produção (Netlify) onde não há backend
-const isProduction = import.meta.env.PROD && window.location.hostname !== 'localhost';
+// Verificar se o backend está disponível (apenas desabilitar em ambientes estáticos como Netlify)
+const isStaticHosting = import.meta.env.PROD && 
+  (window.location.hostname.includes('netlify.app') || 
+   window.location.hostname.includes('vercel.app') ||
+   window.location.hostname.includes('github.io'));
 
 export interface SimulationResult {
   id: string;
@@ -43,8 +46,8 @@ class EnergyPlusService {
    * Verifica o status do servidor EnergyPlus
    */
   async checkHealth(): Promise<HealthStatus> {
-    // Em produção (Netlify), não há backend disponível
-    if (isProduction) {
+    // Em ambientes de hosting estático, não há backend disponível
+    if (isStaticHosting) {
       throw new Error('Simulações não estão disponíveis na versão online. Execute localmente para usar simulações EnergyPlus.');
     }
 
@@ -80,8 +83,8 @@ class EnergyPlusService {
    * Inicia uma nova simulação
    */
   async startSimulation(request: SimulationRequest): Promise<{ simulationId: string; status: string; message: string }> {
-    // Em produção (Netlify), não há backend disponível
-    if (isProduction) {
+    // Em ambientes de hosting estático, não há backend disponível
+    if (isStaticHosting) {
       throw new Error('Simulações não estão disponíveis na versão online. Execute localmente para usar simulações EnergyPlus.');
     }
 

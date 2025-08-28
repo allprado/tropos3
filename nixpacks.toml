@@ -1,14 +1,17 @@
 [phases.setup]
-aptPkgs = ["wget", "bash"]
+aptPkgs = ["wget", "bash", "curl"]
 
 [phases.install]
 cmds = [
   "npm ci",
-  "npm run build"
+  "chmod +x scripts/install-energyplus-render.sh",
+  "./scripts/install-energyplus-render.sh"
 ]
 
 [phases.build]
-cmds = []
+cmds = [
+  "npm run build"
+]
 
 [start]
 cmd = "npm start"
