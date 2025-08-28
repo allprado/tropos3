@@ -9,12 +9,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "server": "npx tsx server/index.ts",
+    "start": "npm run server",
     "vercel-build": "npm run build && npm run server:build",
     "server:build": "tsc server/index.ts --outDir dist/server --module commonjs --target es2018",
     "render-build": "npm run build && chmod +x scripts/install-energyplus-render.sh && ./scripts/install-energyplus-render.sh"
-  },
-    "start": "npm run dev:full",
-    "vercel-build": "npm run build"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.4",
