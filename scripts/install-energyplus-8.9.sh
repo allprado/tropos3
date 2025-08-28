@@ -40,15 +40,15 @@ ls -la "$ENERGYPLUS_DIR"/
 
 # Procurar pelo executável principal
 EXEC_NAME=""
-if [ -f "$ENERGYPLUS_DIR/energyplus" ]; then
+if [ -f "$ENERGYPLUS_DIR/energyplus-8.9.0" ]; then
+    EXEC_NAME="energyplus-8.9.0"
+    echo "✅ Encontrado: energyplus-8.9.0"
+elif [ -f "$ENERGYPLUS_DIR/energyplus" ] && [ ! -L "$ENERGYPLUS_DIR/energyplus" ]; then
     EXEC_NAME="energyplus"
     echo "✅ Encontrado: energyplus"
 elif [ -f "$ENERGYPLUS_DIR/EnergyPlus" ]; then
     EXEC_NAME="EnergyPlus"
     echo "✅ Encontrado: EnergyPlus"
-elif [ -f "$ENERGYPLUS_DIR/energyplus-8.9.0" ]; then
-    EXEC_NAME="energyplus-8.9.0"
-    echo "✅ Encontrado: energyplus-8.9.0"
 else
     echo "❌ Executável do EnergyPlus não encontrado!"
     echo "Arquivos disponíveis:"
@@ -60,6 +60,8 @@ fi
 if [ "$EXEC_NAME" != "energyplus-8.9.0" ]; then
     echo "🔄 Renomeando $EXEC_NAME para energyplus-8.9.0..."
     mv "$ENERGYPLUS_DIR/$EXEC_NAME" "$ENERGYPLUS_DIR/energyplus-8.9.0"
+else
+    echo "✅ Executável já está com o nome correto: energyplus-8.9.0"
 fi
 
 # Tornar os executáveis permissivos
