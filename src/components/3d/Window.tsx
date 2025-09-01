@@ -25,7 +25,7 @@ const Window = ({ position, dimensions, id, name }: WindowProps) => {
     <group position={position}>
       {/* Moldura da janela */}
       <Box 
-        args={[dimensions.width + 0.1, dimensions.height + 0.1, 0.05]} 
+        args={[dimensions.width + 0.002, dimensions.height + 0.002, 0.001]} 
         onClick={(e) => {
           e.stopPropagation();
           setSelectedElement({ type: 'window', id, name });
@@ -40,8 +40,8 @@ const Window = ({ position, dimensions, id, name }: WindowProps) => {
       
       {/* Vidro da janela */}
       <Box 
-        args={[dimensions.width - 0.05, dimensions.height - 0.05, 0.02]} 
-        position={[0, 0, 0.02]} 
+        args={[dimensions.width - 0.001, dimensions.height - 0.001, 0.0005]} 
+        position={[0, 0, 0.0005]} 
       >
         <meshPhysicalMaterial 
           color={windowColor} 

@@ -64,6 +64,7 @@ interface Store {
   
   // Estado da UI
   activeRightPanelTab: 'properties' | 'results';
+  cameraTarget: { position: [number, number, number]; target: [number, number, number] } | null;
   
   // Ações
   setSelectedElement: (element: Element | null) => void;
@@ -86,6 +87,7 @@ interface Store {
   
   // Ações da UI
   setActiveRightPanelTab: (tab: 'properties' | 'results') => void;
+  setCameraTarget: (target: { position: [number, number, number]; target: [number, number, number] } | null) => void;
   
   // Funções de utilidade
   resetModel: () => void;
@@ -160,6 +162,7 @@ export const useStore = create<Store>((set, get) => ({
   
   // Estado da UI
   activeRightPanelTab: 'properties',
+  cameraTarget: null,
   
   // Ações
   setSelectedElement: (element) => set({ selectedElement: element }),
@@ -190,6 +193,7 @@ export const useStore = create<Store>((set, get) => ({
   
   // Ações da UI
   setActiveRightPanelTab: (tab) => set({ activeRightPanelTab: tab }),
+  setCameraTarget: (target) => set({ cameraTarget: target }),
   
   // Funções de utilidade
   resetModel: () => set({ 

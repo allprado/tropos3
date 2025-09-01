@@ -91,7 +91,7 @@ const ExpandIcon = styled.div`
 `;
 
 const BasicElementTree = () => {
-  const { selectedElement, setSelectedElement, building, zone } = useStore();
+  const { selectedElement, setSelectedElement, building, zone, setActiveRightPanelTab, setCameraTarget, activeRightPanelTab, dimensions } = useStore();
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
     'building': true,
     'default-zone': true,
@@ -109,6 +109,109 @@ const BasicElementTree = () => {
     });
   };
   
+  // Função para obter posição isométrica da câmera baseada no elemento
+  const getCameraPositionForElement = (type: string, id: string) => {
+    const { width, length, height } = dimensions;
+    
+    // Centro do modelo
+    const modelCenter = [0, height / 2, 0] as [number, number, number];
+    
+    // Distância padrão para vista isométrica (baseada no maior lado do modelo)
+    const maxDimension = Math.max(width, length, height);
+    const cameraDistance = maxDimension * 2.5; // Distância uniforme
+    
+    switch (type) {
+      case 'surface':
+        if (id === 'floor') {
+          // Vista isométrica de baixo (para ver o piso)
+          return { 
+            position: [cameraDistance * 0.6, -cameraDistance * 0.3, cameraDistance * 0.6] as [number, number, number], 
+            target: modelCenter 
+          };
+        } else if (id === 'ceiling') {
+          // Vista isométrica de cima (para ver o teto)
+          return { 
+            position: [cameraDistance * 0.6, cameraDistance * 0.8, cameraDistance * 0.6] as [number, number, number], 
+            target: modelCenter 
+          };
+        }
+        break;
+      case 'wall':
+        if (id === 'wall-1') { // Norte - vista isométrica frontal-direita
+          return { 
+            position: [cameraDistance * 0.7, cameraDistance * 0.5, -cameraDistance * 0.7] as [number, number, number], 
+            target: modelCenter 
+          };
+        } else if (id === 'wall-2') { // Sul - vista isométrica traseira-direita
+          return { 
+            position: [cameraDistance * 0.7, cameraDistance * 0.5, cameraDistance * 0.7] as [number, number, number], 
+            target: modelCenter 
+          };
+        } else if (id === 'wall-3') { // Leste - vista isométrica direita-frontal
+          return { 
+            position: [cameraDistance * 0.7, cameraDistance * 0.5, -cameraDistance * 0.4] as [number, number, number], 
+            target: modelCenter 
+          };
+        } else if (id === 'wall-4') { // Oeste - vista isométrica esquerda-frontal
+          return { 
+            position: [-cameraDistance * 0.7, cameraDistance * 0.5, -cameraDistance * 0.4] as [number, number, number], 
+            target: modelCenter 
+          };
+        }
+        break;
+      case 'window':
+        // Vista isométrica próxima para janelas (mesma lógica das paredes, mas mais próximo)
+        const windowDistance = cameraDistance * 0.75; // Mais próximo para janelas
+        if (id === 'window-1') { // Norte
+          return { 
+            position: [windowDistance * 0.7, windowDistance * 0.5, -windowDistance * 0.7] as [number, number, number], 
+            target: modelCenter 
+          };
+        } else if (id === 'window-2') { // Sul
+          return { 
+            position: [windowDistance * 0.7, windowDistance * 0.5, windowDistance * 0.7] as [number, number, number], 
+            target: modelCenter 
+          };
+        } else if (id === 'window-3') { // Leste
+          return { 
+            position: [windowDistance * 0.7, windowDistance * 0.5, -windowDistance * 0.4] as [number, number, number], 
+            target: modelCenter 
+          };
+        } else if (id === 'window-4') { // Oeste
+          return { 
+            position: [-windowDistance * 0.7, windowDistance * 0.5, -windowDistance * 0.4] as [number, number, number], 
+            target: modelCenter 
+          };
+        }
+        break;
+      default:
+        // Vista geral isométrica clássica
+        return { 
+          position: [cameraDistance * 0.7, cameraDistance * 0.7, cameraDistance * 0.7] as [number, number, number], 
+          target: modelCenter 
+        };
+    }
+    return { 
+      position: [cameraDistance * 0.7, cameraDistance * 0.7, cameraDistance * 0.7] as [number, number, number], 
+      target: modelCenter 
+    };
+  };
+  
+  // Função para selecionar elemento com rotação de câmera e mudança de aba
+  const handleElementSelection = (type: string, id: string, name: string) => {
+    // Selecionar elemento
+    setSelectedElement({ type: type as any, id, name });
+    
+    // Mudar para aba propriedades se estiver em resultados
+    if (activeRightPanelTab === 'results') {
+      setActiveRightPanelTab('properties');
+    }
+    
+    // Mover câmera para mostrar o elemento
+    const cameraConfig = getCameraPositionForElement(type, id);
+    setCameraTarget(cameraConfig);
+  };
+  
   const isSelected = (type: string, id: string) => 
     selectedElement?.type === type && selectedElement?.id === id;
   
@@ -120,12 +223,12 @@ const BasicElementTree = () => {
         {/* Edifício */}
         <TreeItem 
           $isSelected={isSelected('building', 'main-building')} 
-          onClick={() => {}}
+          onClick={() => handleElementSelection('building', 'main-building', building.name)}
         >
           <TreeItemContent
             onClick={(e) => {
               e.stopPropagation();
-              setSelectedElement({ type: 'building', id: 'main-building', name: building.name });
+              handleElementSelection('building', 'main-building', building.name);
             }}
           >
             <ExpandIcon onClick={(e) => toggleExpand('building', e)}>
@@ -141,12 +244,12 @@ const BasicElementTree = () => {
               {/* Zona */}
               <TreeItem 
                 $isSelected={isSelected('zone', 'default-zone')} 
-                onClick={() => {}}
+                onClick={() => handleElementSelection('zone', 'default-zone', zone.name)}
               >
                 <TreeItemContent
                   onClick={(e) => {
                     e.stopPropagation();
-                    setSelectedElement({ type: 'zone', id: 'default-zone', name: zone.name });
+                    handleElementSelection('zone', 'default-zone', zone.name);
                   }}
                 >
                   <ExpandIcon onClick={(e) => toggleExpand('default-zone', e)}>
@@ -161,12 +264,12 @@ const BasicElementTree = () => {
                   <TreeItemChildren>
                     <TreeItem 
                       $isSelected={isSelected('surface', 'floor')} 
-                      onClick={() => {}}
+                      onClick={() => handleElementSelection('surface', 'floor', 'Piso')}
                     >
                       <TreeItemContent
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedElement({ type: 'surface', id: 'floor', name: 'Piso' });
+                          handleElementSelection('surface', 'floor', 'Piso');
                         }}
                       >
                         <div style={{ width: '16px' }}></div>
@@ -176,12 +279,12 @@ const BasicElementTree = () => {
                     
                     <TreeItem 
                       $isSelected={isSelected('surface', 'ceiling')} 
-                      onClick={() => {}}
+                      onClick={() => handleElementSelection('surface', 'ceiling', 'Teto')}
                     >
                       <TreeItemContent
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedElement({ type: 'surface', id: 'ceiling', name: 'Teto' });
+                          handleElementSelection('surface', 'ceiling', 'Teto');
                         }}
                       >
                         <div style={{ width: '16px' }}></div>
@@ -200,12 +303,12 @@ const BasicElementTree = () => {
                         <TreeItem 
                           key={wallId}
                           $isSelected={isSelected('wall', wallId)} 
-                          onClick={() => {}}
+                          onClick={() => handleElementSelection('wall', wallId, wallName)}
                         >
                           <TreeItemContent
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedElement({ type: 'wall', id: wallId, name: wallName });
+                              handleElementSelection('wall', wallId, wallName);
                             }}
                           >
                             <ExpandIcon onClick={(e) => toggleExpand(wallId, e)}>
@@ -220,12 +323,12 @@ const BasicElementTree = () => {
                             <TreeItemChildren>
                               <TreeItem 
                                 $isSelected={isSelected('window', windowId)} 
-                                onClick={() => {}}
+                                onClick={() => handleElementSelection('window', windowId, windowName)}
                               >
                                 <TreeItemContent
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setSelectedElement({ type: 'window', id: windowId, name: windowName });
+                                    handleElementSelection('window', windowId, windowName);
                                   }}
                                 >
                                   <div style={{ width: '16px' }}></div>

@@ -18,14 +18,6 @@ const PanelContainer = styled.div`
   gap: 0.8rem;
 `;
 
-const PanelTitle = styled.h2`
-  font-size: 1.2rem;
-  margin: 0 0 0.5rem 0;
-  color: #333;
-  border-bottom: 1px solid #eaeaea;
-  padding-bottom: 0.5rem;
-`;
-
 const PropertyGroup = styled.div`
   margin-bottom: 1rem;
 `;
@@ -322,8 +314,6 @@ const BasicPropertiesPanel = () => {
   
   return (
     <PanelContainer>
-      <PanelTitle>Propriedades</PanelTitle>
-      
       <PropertyGroup>
         <GroupTitle>
           {icon} {selectedElement.name}
@@ -605,7 +595,7 @@ const BasicPropertiesPanel = () => {
                             );
                           }
                         }}
-                        step="0.01"
+                        step="0.1"
                         min="0.0"
                       />
                     </PropertyRow>
@@ -625,7 +615,7 @@ const BasicPropertiesPanel = () => {
                             );
                           }
                         }}
-                        step="0.01"
+                        step="0.1"
                         min="0.0"
                       />
                     </PropertyRow>

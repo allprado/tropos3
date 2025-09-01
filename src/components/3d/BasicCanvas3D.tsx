@@ -3,6 +3,7 @@ import { OrbitControls, Grid } from '@react-three/drei';
 import { Suspense } from 'react';
 import BasicZone from './BasicZone';
 import BasicNorthIndicator from './BasicNorthIndicator';
+import CameraController from './CameraController';
 
 const LoadingFallback = () => (
   <div style={{
@@ -38,7 +39,13 @@ const BasicCanvas3D = () => {
           />
           
           {/* Controles de câmera */}
+          <CameraController />
           <OrbitControls 
+            ref={(controls) => {
+              if (controls) {
+                (window as any).orbitControls = controls;
+              }
+            }}
             enablePan={true}
             enableZoom={true}
             enableRotate={true}

@@ -156,12 +156,12 @@ const BasicZone = ({ position = [0, 0, 0] }: BasicZoneProps) => {
       {windowDimensions['window-1']?.enabled && (
         <>
           <mesh
-            position={[0, (windowDimensions['window-1']?.sillHeight || 1.0) + (windowDimensions['window-1']?.height || 1.1) / 2, -length / 2 - 0.02]}
+            position={[0, (windowDimensions['window-1']?.sillHeight || 1.0) + (windowDimensions['window-1']?.height || 1.1) / 2, -length / 2]}
             onClick={(e) => handleElementClick('window', 'window-1', 'Janela 1', e)}
             onPointerOver={() => setHovered('window-1')}
             onPointerOut={() => setHovered(null)}
           >
-            <boxGeometry args={[windowDimensions['window-1']?.width || 1.5, windowDimensions['window-1']?.height || 1.1, 0.02]} />
+            <boxGeometry args={[windowDimensions['window-1']?.width || 1.5, windowDimensions['window-1']?.height || 1.1, 0.001]} />
             <meshPhysicalMaterial 
               color={getSelectionColor('window-1', "#87ceeb", "#4682b4")}
               transparent 
@@ -195,13 +195,13 @@ const BasicZone = ({ position = [0, 0, 0] }: BasicZoneProps) => {
       {windowDimensions['window-2']?.enabled && (
         <>
           <mesh
-            position={[0, (windowDimensions['window-2']?.sillHeight || 1.0) + (windowDimensions['window-2']?.height || 1.1) / 2, length / 2 + 0.02]}
+            position={[0, (windowDimensions['window-2']?.sillHeight || 1.0) + (windowDimensions['window-2']?.height || 1.1) / 2, length / 2]}
             rotation={[0, Math.PI, 0]}
             onClick={(e) => handleElementClick('window', 'window-2', 'Janela 2', e)}
             onPointerOver={() => setHovered('window-2')}
             onPointerOut={() => setHovered(null)}
           >
-            <boxGeometry args={[windowDimensions['window-2']?.width || 1.5, windowDimensions['window-2']?.height || 1.1, 0.02]} />
+            <boxGeometry args={[windowDimensions['window-2']?.width || 1.5, windowDimensions['window-2']?.height || 1.1, 0.001]} />
             <meshPhysicalMaterial 
               color={getSelectionColor('window-2', "#87ceeb", "#4682b4")}
               transparent 
@@ -235,13 +235,13 @@ const BasicZone = ({ position = [0, 0, 0] }: BasicZoneProps) => {
       {windowDimensions['window-3']?.enabled && (
         <>
           <mesh
-            position={[width / 2 + 0.02, (windowDimensions['window-3']?.sillHeight || 1.0) + (windowDimensions['window-3']?.height || 1.1) / 2, 0]}
+            position={[width / 2, (windowDimensions['window-3']?.sillHeight || 1.0) + (windowDimensions['window-3']?.height || 1.1) / 2, 0]}
             rotation={[0, Math.PI / 2, 0]}
             onClick={(e) => handleElementClick('window', 'window-3', 'Janela 3', e)}
             onPointerOver={() => setHovered('window-3')}
             onPointerOut={() => setHovered(null)}
           >
-            <boxGeometry args={[windowDimensions['window-3']?.width || 1.5, windowDimensions['window-3']?.height || 1.1, 0.02]} />
+            <boxGeometry args={[windowDimensions['window-3']?.width || 1.5, windowDimensions['window-3']?.height || 1.1, 0.001]} />
             <meshPhysicalMaterial 
               color={getSelectionColor('window-3', "#87ceeb", "#4682b4")}
               transparent 
@@ -276,13 +276,13 @@ const BasicZone = ({ position = [0, 0, 0] }: BasicZoneProps) => {
       {windowDimensions['window-4']?.enabled && (
         <>
           <mesh
-            position={[-width / 2 - 0.02, (windowDimensions['window-4']?.sillHeight || 1.0) + (windowDimensions['window-4']?.height || 1.1) / 2, 0]}
+            position={[-width / 2, (windowDimensions['window-4']?.sillHeight || 1.0) + (windowDimensions['window-4']?.height || 1.1) / 2, 0]}
             rotation={[0, -Math.PI / 2, 0]}
             onClick={(e) => handleElementClick('window', 'window-4', 'Janela 4', e)}
             onPointerOver={() => setHovered('window-4')}
             onPointerOut={() => setHovered(null)}
           >
-            <boxGeometry args={[windowDimensions['window-4']?.width || 1.5, windowDimensions['window-4']?.height || 1.1, 0.02]} />
+            <boxGeometry args={[windowDimensions['window-4']?.width || 1.5, windowDimensions['window-4']?.height || 1.1, 0.001]} />
             <meshPhysicalMaterial 
               color={getSelectionColor('window-4', "#87ceeb", "#4682b4")}
               transparent 
