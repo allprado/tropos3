@@ -42,14 +42,18 @@ const TabButton = styled.button<{ $isActive: boolean }>`
 
 const TabContent = styled.div`
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 `;
 
 const PropertiesWrapper = styled.div`
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 `;
 
 const TabbedRightPanel: React.FC = () => {

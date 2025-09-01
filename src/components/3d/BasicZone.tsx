@@ -84,7 +84,8 @@ const BasicZone = ({ position = [0, 0, 0] }: BasicZoneProps) => {
         <meshStandardMaterial 
           color={getSelectionColor('floor', "#b8d9ee", "#d4d4d4")}
           transparent
-          opacity={0.8}
+          opacity={0.9}
+          side={2} // DoubleSide para ser visível por baixo
         />
       </mesh>
       
@@ -100,8 +101,8 @@ const BasicZone = ({ position = [0, 0, 0] }: BasicZoneProps) => {
         <planeGeometry args={[width, length]} />
         <meshStandardMaterial 
           color={getSelectionColor('ceiling', "#b8d9ee", "#e5e5e5")}
-          transparent
-          opacity={0.8}
+          transparent={false}
+          opacity={1.0}
           side={2} // DoubleSide
         />
       </mesh>

@@ -199,11 +199,40 @@ const BasicPropertiesPanel = () => {
       ...currentProps,
       [property]: value
     });
+
+    // Se for uma parede sendo marcada como adiabática, desabilitar a janela automaticamente
+    if (property === 'isAdiabatic' && value === true && surfaceId.startsWith('wall-')) {
+      const windowId = getWindowIdFromWallId(surfaceId);
+      setWindowDimensions(windowId, {
+        ...windowDimensions[windowId],
+        enabled: false
+      });
+    }
   };
 
   // Função para mapear wall-id para window-id
   const getWindowIdFromWallId = (wallId: string): string => {
     return wallId.replace('wall-', 'window-');
+  };
+
+  // Função para calcular largura máxima da janela baseada na orientação da parede
+  const getMaxWindowWidth = (wallId: string): number => {
+    switch (wallId) {
+      case 'wall-1': // South - window-1
+      case 'wall-2': // North - window-2
+        return dimensions.width;
+      case 'wall-3': // East - window-3
+      case 'wall-4': // West - window-4
+        return dimensions.length;
+      default:
+        return Math.min(dimensions.width, dimensions.length); // fallback
+    }
+  };
+
+  // Função para calcular largura máxima da janela baseada no ID da janela
+  const getMaxWindowWidthFromWindowId = (windowId: string): number => {
+    const wallId = windowId.replace('window-', 'wall-');
+    return getMaxWindowWidth(wallId);
   };
 
   // Função para habilitar/desabilitar janela
@@ -468,7 +497,7 @@ const BasicPropertiesPanel = () => {
                     value={windowDimensions[getWindowIdFromWallId(selectedElement.id)]?.width || 1.5} 
                     onChange={(e) => {
                       const value = parseFloat(e.target.value);
-                      if (!isNaN(value) && value > 0 && value <= Math.min(dimensions.width, dimensions.length)) {
+                      if (!isNaN(value) && value > 0 && value <= getMaxWindowWidth(selectedElement.id)) {
                         setWindowDimensions(getWindowIdFromWallId(selectedElement.id), {
                           ...windowDimensions[getWindowIdFromWallId(selectedElement.id)],
                           width: value
@@ -477,7 +506,7 @@ const BasicPropertiesPanel = () => {
                     }}
                     step="0.1"
                     min="0.1"
-                    max={Math.min(dimensions.width, dimensions.length)}
+                    max={getMaxWindowWidth(selectedElement.id)}
                   />
                 </PropertyRow>
                 
@@ -565,7 +594,7 @@ const BasicPropertiesPanel = () => {
                         value={overhangProperties[getWindowIdFromWallId(selectedElement.id)]?.extensionLeft || 0.2}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value);
-                          if (!isNaN(value) && value >= 0.0 && value <= 1.0) {
+                          if (!isNaN(value) && value >= 0.0) {
                             handleOverhangPropertyChange(
                               getWindowIdFromWallId(selectedElement.id), 
                               'extensionLeft', 
@@ -573,9 +602,8 @@ const BasicPropertiesPanel = () => {
                             );
                           }
                         }}
-                        step="0.1"
+                        step="0.01"
                         min="0.0"
-                        max="1.0"
                       />
                     </PropertyRow>
                     
@@ -586,7 +614,7 @@ const BasicPropertiesPanel = () => {
                         value={overhangProperties[getWindowIdFromWallId(selectedElement.id)]?.extensionRight || 0.2}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value);
-                          if (!isNaN(value) && value >= 0.0 && value <= 1.0) {
+                          if (!isNaN(value) && value >= 0.0) {
                             handleOverhangPropertyChange(
                               getWindowIdFromWallId(selectedElement.id), 
                               'extensionRight', 
@@ -594,9 +622,8 @@ const BasicPropertiesPanel = () => {
                             );
                           }
                         }}
-                        step="0.1"
+                        step="0.01"
                         min="0.0"
-                        max="1.0"
                       />
                     </PropertyRow>
                   </>
@@ -627,7 +654,7 @@ const BasicPropertiesPanel = () => {
                 value={windowDimensions[selectedElement.id]?.width || 1.5} 
                 onChange={(e) => {
                   const value = parseFloat(e.target.value);
-                  if (!isNaN(value) && value > 0 && value <= Math.min(dimensions.width, dimensions.length)) {
+                  if (!isNaN(value) && value > 0 && value <= getMaxWindowWidthFromWindowId(selectedElement.id)) {
                     setWindowDimensions(selectedElement.id, {
                       ...windowDimensions[selectedElement.id],
                       width: value
@@ -636,7 +663,7 @@ const BasicPropertiesPanel = () => {
                 }}
                 step="0.1"
                 min="0.1"
-                max={Math.min(dimensions.width, dimensions.length)}
+                max={getMaxWindowWidthFromWindowId(selectedElement.id)}
               />
             </PropertyRow>
             

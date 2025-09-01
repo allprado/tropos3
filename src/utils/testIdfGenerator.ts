@@ -27,7 +27,7 @@ export const testIdfGenerator = () => {
       'window-3': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
       'window-4': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
     };
-    const idfContent = generateIdf(testDimensions, testNorthAngle, testMaterials, testWindowDimensions, undefined, {});
+    const idfContent = generateIdf(testDimensions, testNorthAngle, testMaterials, testWindowDimensions, undefined, {}, {});
     
     console.log('✅ IDF gerado com sucesso!');
     

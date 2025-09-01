@@ -236,10 +236,10 @@ export const useStore = create<Store>((set, get) => ({
   },
   
   exportToIdf: () => {
-    const { dimensions, northAngle, materials, building, windowDimensions, overhangProperties } = get();
+    const { dimensions, northAngle, materials, building, windowDimensions, overhangProperties, surfaceProperties } = get();
     
     // Usar o gerador IDF corrigido com dados de localização se disponíveis
-    const idfContent = generateIdf(dimensions, northAngle, materials, windowDimensions, building.locationData || undefined, overhangProperties);
+    const idfContent = generateIdf(dimensions, northAngle, materials, windowDimensions, building.locationData || undefined, overhangProperties, surfaceProperties);
     
     const dataUri = 'data:text/plain;charset=utf-8,'+ encodeURIComponent(idfContent);
     
@@ -253,7 +253,7 @@ export const useStore = create<Store>((set, get) => ({
   
   runSimulation: async () => {
     const state = get();
-    const { dimensions, northAngle, materials, building, windowDimensions, overhangProperties } = state;
+    const { dimensions, northAngle, materials, building, windowDimensions, overhangProperties, surfaceProperties } = state;
     
     try {
       // Verificar se o servidor está disponível
@@ -270,7 +270,7 @@ export const useStore = create<Store>((set, get) => ({
       }
 
       // Gerar conteúdo IDF
-      const idfContent = generateIdf(dimensions, northAngle, materials, windowDimensions, building.locationData || undefined, overhangProperties);
+      const idfContent = generateIdf(dimensions, northAngle, materials, windowDimensions, building.locationData || undefined, overhangProperties, surfaceProperties);
       
       // Preparar arquivo EPW se disponível
       let epwFile: File | undefined;

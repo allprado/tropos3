@@ -1,7 +1,7 @@
 /**
  * Serviço para geração de arquivos IDF para o EnergyPlus
  */
-import type { Dimensions, Materials, LocationData, OverhangProperties } from '../types';
+import type { Dimensions, Materials, LocationData, OverhangProperties, SurfaceProperties } from '../types';
 
 // Interface para dimensões das janelas
 interface WindowDimensions {
@@ -56,6 +56,7 @@ export const parseEpwLocation = (epwContent: string): LocationData | null => {
  * @param windowDimensions - Dimensões e configurações das janelas
  * @param locationData - Dados de localização do arquivo EPW (opcional)
  * @param overhangProperties - Propriedades dos overhangs (opcional)
+ * @param surfaceProperties - Propriedades das superfícies (opcional)
  * @returns Conteúdo do arquivo IDF como string
  */
 export const generateIdf = (
@@ -64,7 +65,8 @@ export const generateIdf = (
   materials: Materials,
   windowDimensions: Record<string, WindowDimensions>,
   locationData?: LocationData,
-  overhangProperties?: Record<string, OverhangProperties>
+  overhangProperties?: Record<string, OverhangProperties>,
+  surfaceProperties?: Record<string, SurfaceProperties>
 ): string => {
   const { width, length, height } = dimensions;
   const northDeg = (northAngle * 180 / Math.PI) % 360;
@@ -161,6 +163,84 @@ Shading:Zone:Detailed,
    ,                                              !- Transmittance Schedule Name  
    4,                                             !- Number of Vertices${vertices}
 `;
+  };
+
+  // Função para obter propriedades da parede baseada no surfaceProperties
+  const getWallProperties = (wallId: string) => {
+    const props = surfaceProperties?.[wallId];
+    if (!props) {
+      return {
+        outsideFace: 'Outdoors, ,',
+        sunExposure: 'SunExposed',
+        windExposure: 'WindExposed'
+      };
+    }
+
+    if (props.isAdiabatic) {
+      return {
+        outsideFace: 'Adiabatic, ,',
+        sunExposure: 'NoSun',
+        windExposure: 'NoWind'
+      };
+    } else {
+      return {
+        outsideFace: 'Outdoors, ,',
+        sunExposure: props.sunExposure || 'SunExposed',
+        windExposure: props.windExposure || 'WindExposed'
+      };
+    }
+  };
+
+  // Função para obter propriedades do piso baseada no surfaceProperties
+  const getFloorProperties = () => {
+    const props = surfaceProperties?.['floor'];
+    if (!props) {
+      return {
+        outsideFace: 'Ground, ,',
+        sunExposure: 'NoSun',
+        windExposure: 'NoWind'
+      };
+    }
+
+    if (props.isAdiabatic) {
+      return {
+        outsideFace: 'Adiabatic, ,',
+        sunExposure: 'NoSun',
+        windExposure: 'NoWind'
+      };
+    } else {
+      return {
+        outsideFace: 'Ground, ,',
+        sunExposure: props.sunExposure || 'NoSun',
+        windExposure: props.windExposure || 'NoWind'
+      };
+    }
+  };
+
+  // Função para obter propriedades do teto baseada no surfaceProperties
+  const getCeilingProperties = () => {
+    const props = surfaceProperties?.['ceiling'];
+    if (!props) {
+      return {
+        outsideFace: 'Outdoors, ,',
+        sunExposure: 'SunExposed',
+        windExposure: 'WindExposed'
+      };
+    }
+
+    if (props.isAdiabatic) {
+      return {
+        outsideFace: 'Adiabatic, ,',
+        sunExposure: 'NoSun',
+        windExposure: 'NoWind'
+      };
+    } else {
+      return {
+        outsideFace: 'Outdoors, ,',
+        sunExposure: props.sunExposure || 'SunExposed',
+        windExposure: props.windExposure || 'WindExposed'
+      };
+    }
   };
 
   // Função para gerar uma janela se ela estiver habilitada
@@ -440,9 +520,9 @@ BuildingSurface:Detailed,                        !- Surface
    GroundFloor,                                   !- Surface name
    Floor, ${floorConstruction},                   !- Class and Construction Name
    Zone Default,                                  !- Zone Name
-   Ground, ,                                      !- Outside Face Environment
-   NoSun,                                         !- Sun Exposure
-   NoWind,                                        !- Wind Exposure
+   ${getFloorProperties().outsideFace}            !- Outside Face Environment
+   ${getFloorProperties().sunExposure},           !- Sun Exposure
+   ${getFloorProperties().windExposure},          !- Wind Exposure
    AutoCalculate,                                 !- View Factor to Ground
    4,                                             !- Number vertices
     ${formatNum(x1)}, ${formatNum(y1)}, ${formatNum(z1)},  !- Vertex 1
@@ -455,9 +535,9 @@ BuildingSurface:Detailed,                        !- Surface
    Roof,                                          !- Surface name
    Roof, ${floorConstruction},                    !- Class and Construction Name
    Zone Default,                                  !- Zone Name
-   Outdoors, ,                                    !- Outside Face Environment
-   SunExposed,                                    !- Sun Exposure
-   WindExposed,                                   !- Wind Exposure
+   ${getCeilingProperties().outsideFace}          !- Outside Face Environment
+   ${getCeilingProperties().sunExposure},         !- Sun Exposure
+   ${getCeilingProperties().windExposure},        !- Wind Exposure
    AutoCalculate,                                 !- View Factor to Ground
    4,                                             !- Number vertices
     ${formatNum(x2)}, ${formatNum(y1)}, ${formatNum(z2)},  !- Vertex 1
@@ -470,9 +550,9 @@ BuildingSurface:Detailed,                        !- Surface
    Wall South,                                    !- Surface name
    Wall, ${wallConstruction},                     !- Class and Construction Name
    Zone Default,                                  !- Zone Name
-   Outdoors, ,                                    !- Outside Face Environment
-   SunExposed,                                    !- Sun Exposure
-   WindExposed,                                   !- Wind Exposure
+   ${getWallProperties('wall-1').outsideFace}     !- Outside Face Environment
+   ${getWallProperties('wall-1').sunExposure},    !- Sun Exposure
+   ${getWallProperties('wall-1').windExposure},   !- Wind Exposure
    AutoCalculate,                                 !- View Factor to Ground
    4,                                             !- Number vertices
     ${formatNum(x1)}, ${formatNum(y2)}, ${formatNum(z1)},  !- Vertex 1
@@ -485,9 +565,9 @@ BuildingSurface:Detailed,                        !- Surface
    Wall North,                                    !- Surface name
    Wall, ${wallConstruction},                     !- Class and Construction Name
    Zone Default,                                  !- Zone Name
-   Outdoors, ,                                    !- Outside Face Environment
-   SunExposed,                                    !- Sun Exposure
-   WindExposed,                                   !- Wind Exposure
+   ${getWallProperties('wall-2').outsideFace}     !- Outside Face Environment
+   ${getWallProperties('wall-2').sunExposure},    !- Sun Exposure
+   ${getWallProperties('wall-2').windExposure},   !- Wind Exposure
    AutoCalculate,                                 !- View Factor to Ground
    4,                                             !- Number vertices
     ${formatNum(x2)}, ${formatNum(y1)}, ${formatNum(z1)},  !- Vertex 1
@@ -501,9 +581,9 @@ BuildingSurface:Detailed,                        !- Surface
    Wall East,                                     !- Surface name
    Wall, ${wallConstruction},                     !- Class and Construction Name
    Zone Default,                                  !- Zone Name
-   Outdoors, ,                                    !- Outside Face Environment
-   SunExposed,                                    !- Sun Exposure
-   WindExposed,                                   !- Wind Exposure
+   ${getWallProperties('wall-3').outsideFace}     !- Outside Face Environment
+   ${getWallProperties('wall-3').sunExposure},    !- Sun Exposure
+   ${getWallProperties('wall-3').windExposure},   !- Wind Exposure
    AutoCalculate,                                 !- View Factor to Ground
    4,                                             !- Number vertices
     ${formatNum(x2)}, ${formatNum(y1)}, ${formatNum(z1)},  !- Vertex 1
@@ -516,9 +596,9 @@ BuildingSurface:Detailed,                        !- Surface
    Wall West,                                     !- Surface name
    Wall, ${wallConstruction},                     !- Class and Construction Name
    Zone Default,                                  !- Zone Name
-   Outdoors, ,                                    !- Outside Face Environment
-   SunExposed,                                    !- Sun Exposure
-   WindExposed,                                   !- Wind Exposure
+   ${getWallProperties('wall-4').outsideFace}     !- Outside Face Environment
+   ${getWallProperties('wall-4').sunExposure},    !- Sun Exposure
+   ${getWallProperties('wall-4').windExposure},   !- Wind Exposure
    AutoCalculate,                                 !- View Factor to Ground
    4,                                             !- Number vertices
     ${formatNum(x1)}, ${formatNum(y2)}, ${formatNum(z1)},  !- Vertex 1

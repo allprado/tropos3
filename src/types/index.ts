@@ -62,6 +62,12 @@ export interface OverhangProperties {
   extensionRight: number; // Extensão lateral direita
 }
 
+export interface SurfaceProperties {
+  isAdiabatic: boolean;
+  windExposure: 'WindExposed' | 'NoWind'; // Apenas se não for adiabática
+  sunExposure: 'SunExposed' | 'NoSun'; // Apenas se não for adiabática
+}
+
 export interface Model {
   zones: Zone[];
   northAngle: number;
