@@ -13,7 +13,6 @@ const BasicZone = ({ position = [0, 0, 0] }: BasicZoneProps) => {
   const floorRef = useRef<Mesh>(null);
   const ceilingRef = useRef<Mesh>(null);
   const [hovered, setHovered] = useState<string | null>(null);
-  const [lastClick, setLastClick] = useState<{ time: number; target: string } | null>(null);
   
   const handleZoneClick = (e: any) => {
     e.stopPropagation();
@@ -27,37 +26,19 @@ const BasicZone = ({ position = [0, 0, 0] }: BasicZoneProps) => {
   const handleElementClick = (elementType: string, elementId: string, elementName: string, e: any) => {
     e.stopPropagation();
     
-    const now = Date.now();
-    const isDoubleClick = lastClick && 
-                         lastClick.target === elementId && 
-                         (now - lastClick.time) < 300;
+    console.log('🖱️ Elemento clicado:', { elementType, elementId, elementName });
     
-    if (isDoubleClick) {
-      // Duplo clique - seleciona o elemento específico
-      setSelectedElement({ 
-        type: elementType as 'zone' | 'wall' | 'window' | 'surface', 
-        id: elementId, 
-        name: elementName 
-      });
-      setLastClick(null);
-    } else {
-      // Clique único - seleciona a zona
-      setLastClick({ time: now, target: elementId });
-      setTimeout(() => {
-        if (lastClick && lastClick.target === elementId && lastClick.time === now) {
-          setSelectedElement({ 
-            type: 'zone', 
-            id: 'default-zone', 
-            name: 'Zona Padrão' 
-          });
-        }
-      }, 300);
-    }
+    // Clique simples seleciona diretamente o elemento
+    setSelectedElement({ 
+      type: elementType as 'zone' | 'wall' | 'window' | 'surface', 
+      id: elementId, 
+      name: elementName 
+    });
   };
   
   const isSelected = (id: string) => selectedElement?.id === id;
   const getSelectionColor = (id: string, hoverColor: string, defaultColor: string) => {
-    if (isSelected(id)) return "#ff8c00"; // Cor laranja para seleção
+    if (isSelected(id)) return "#ff0000"; // Cor vermelha bem visível para seleção
     if (hovered === id) return hoverColor;
     
     // Verificar se a superfície é adiabática

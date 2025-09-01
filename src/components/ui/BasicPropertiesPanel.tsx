@@ -272,6 +272,9 @@ const BasicPropertiesPanel = () => {
     setOverhangProperties(windowId, newProps);
   };
   
+  // Debug: verificar elemento selecionado
+  console.log('📋 BasicPropertiesPanel - selectedElement:', selectedElement);
+  
   if (!selectedElement) {
     return (
       <PanelContainer>
