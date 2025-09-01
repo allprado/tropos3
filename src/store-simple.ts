@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { generateIdf } from './services/idfGenerator';
 import { energyPlusService, type SimulationResult } from './services/energyPlusService';
-import type { LocationData } from './types';
+import type { LocationData, OverhangProperties } from './types';
 
 interface Element {
   type: 'building' | 'zone' | 'wall' | 'window' | 'surface';
@@ -20,13 +20,6 @@ interface WindowDimensions {
   height: number;
   sillHeight: number;
   enabled: boolean; // Para habilitar/desabilitar janela
-}
-
-interface OverhangProperties {
-  enabled: boolean;
-  depth: number; // Profundidade do overhang (para fora da parede)
-  extensionLeft: number; // Extensão lateral esquerda
-  extensionRight: number; // Extensão lateral direita
 }
 
 interface SurfaceProperties {
@@ -243,10 +236,10 @@ export const useStore = create<Store>((set, get) => ({
   },
   
   exportToIdf: () => {
-    const { dimensions, northAngle, materials, building, windowDimensions } = get();
+    const { dimensions, northAngle, materials, building, windowDimensions, overhangProperties } = get();
     
     // Usar o gerador IDF corrigido com dados de localização se disponíveis
-    const idfContent = generateIdf(dimensions, northAngle, materials, windowDimensions, building.locationData || undefined);
+    const idfContent = generateIdf(dimensions, northAngle, materials, windowDimensions, building.locationData || undefined, overhangProperties);
     
     const dataUri = 'data:text/plain;charset=utf-8,'+ encodeURIComponent(idfContent);
     
@@ -260,7 +253,7 @@ export const useStore = create<Store>((set, get) => ({
   
   runSimulation: async () => {
     const state = get();
-    const { dimensions, northAngle, materials, building, windowDimensions } = state;
+    const { dimensions, northAngle, materials, building, windowDimensions, overhangProperties } = state;
     
     try {
       // Verificar se o servidor está disponível
@@ -277,7 +270,7 @@ export const useStore = create<Store>((set, get) => ({
       }
 
       // Gerar conteúdo IDF
-      const idfContent = generateIdf(dimensions, northAngle, materials, windowDimensions, building.locationData || undefined);
+      const idfContent = generateIdf(dimensions, northAngle, materials, windowDimensions, building.locationData || undefined, overhangProperties);
       
       // Preparar arquivo EPW se disponível
       let epwFile: File | undefined;

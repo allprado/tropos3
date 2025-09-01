@@ -55,6 +55,13 @@ export interface Window {
   material: string;
 }
 
+export interface OverhangProperties {
+  enabled: boolean;
+  depth: number; // Profundidade do overhang (para fora da parede)
+  extensionLeft: number; // Extensão lateral esquerda
+  extensionRight: number; // Extensão lateral direita
+}
+
 export interface Model {
   zones: Zone[];
   northAngle: number;

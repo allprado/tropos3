@@ -148,7 +148,7 @@ export const useStore = create<Store>((set, get) => ({
       'window-3': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
       'window-4': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
     };
-    const idfContent = generateIdf(dimensions, northAngle, materials, defaultWindowDimensions);
+    const idfContent = generateIdf(dimensions, northAngle, materials, defaultWindowDimensions, undefined, {});
     
     // Download do arquivo IDF
     const dataUri = 'data:text/plain;charset=utf-8,'+ encodeURIComponent(idfContent);
@@ -172,7 +172,7 @@ export const useStore = create<Store>((set, get) => ({
         'window-3': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
         'window-4': { width: 1.5, height: 1.1, sillHeight: 1.0, enabled: true },
       };
-      const idfContent = generateIdf(dimensions, northAngle, materials, defaultWindowDimensions);
+      const idfContent = generateIdf(dimensions, northAngle, materials, defaultWindowDimensions, undefined, {});
       
       // Executar a simulação via API JessWeb
       const results = await runJessWebSimulation(idfContent);

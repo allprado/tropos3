@@ -1,7 +1,7 @@
 /**
  * Serviço para geração de arquivos IDF para o EnergyPlus
  */
-import type { Dimensions, Materials, LocationData } from '../types';
+import type { Dimensions, Materials, LocationData, OverhangProperties } from '../types';
 
 // Interface para dimensões das janelas
 interface WindowDimensions {
@@ -55,6 +55,7 @@ export const parseEpwLocation = (epwContent: string): LocationData | null => {
  * @param materials - Materiais utilizados
  * @param windowDimensions - Dimensões e configurações das janelas
  * @param locationData - Dados de localização do arquivo EPW (opcional)
+ * @param overhangProperties - Propriedades dos overhangs (opcional)
  * @returns Conteúdo do arquivo IDF como string
  */
 export const generateIdf = (
@@ -62,7 +63,8 @@ export const generateIdf = (
   northAngle: number, 
   materials: Materials,
   windowDimensions: Record<string, WindowDimensions>,
-  locationData?: LocationData
+  locationData?: LocationData,
+  overhangProperties?: Record<string, OverhangProperties>
 ): string => {
   const { width, length, height } = dimensions;
   const northDeg = (northAngle * 180 / Math.PI) % 360;
@@ -92,6 +94,73 @@ export const generateIdf = (
     'window-2': { wall: 'Wall North', orientation: 'north' },
     'window-3': { wall: 'Wall East', orientation: 'east' },
     'window-4': { wall: 'Wall West', orientation: 'west' }
+  };
+
+  // Função para gerar um overhang se ele estiver habilitado
+  const generateOverhang = (windowId: string): string => {
+    const windowData = windowDimensions[windowId];
+    const overhangData = overhangProperties?.[windowId];
+    const wallInfo = windowMapping[windowId as keyof typeof windowMapping];
+    
+    if (!windowData || !windowData.enabled || !overhangData || !overhangData.enabled || !wallInfo) {
+      return '';
+    }
+
+    const { width: windowWidth, height: windowHeight, sillHeight } = windowData;
+    const { depth, extensionLeft, extensionRight } = overhangData;
+    
+    // Altura do topo da janela
+    const windowTop = sillHeight + windowHeight;
+    
+    // Largura total do overhang (janela + extensões)
+    const overhangWidth = windowWidth + extensionLeft + extensionRight;
+    
+    // Calcular vértices do overhang baseado na orientação da parede
+    let vertices = '';
+    
+    switch (wallInfo.orientation) {
+      case 'south':
+        // Parede Sul (Y negativo)
+        vertices = `
+    ${formatNum(-overhangWidth/2)}, ${formatNum(y1)}, ${formatNum(windowTop)},        !- Vertex 1
+    ${formatNum(overhangWidth/2)}, ${formatNum(y1)}, ${formatNum(windowTop)},         !- Vertex 2
+    ${formatNum(overhangWidth/2)}, ${formatNum(y1 - depth)}, ${formatNum(windowTop)}, !- Vertex 3
+    ${formatNum(-overhangWidth/2)}, ${formatNum(y1 - depth)}, ${formatNum(windowTop)};!- Vertex 4`;
+        break;
+      case 'north':
+        // Parede Norte (Y positivo)
+        vertices = `
+    ${formatNum(overhangWidth/2)}, ${formatNum(y2)}, ${formatNum(windowTop)},         !- Vertex 1
+    ${formatNum(-overhangWidth/2)}, ${formatNum(y2)}, ${formatNum(windowTop)},        !- Vertex 2
+    ${formatNum(-overhangWidth/2)}, ${formatNum(y2 + depth)}, ${formatNum(windowTop)},!- Vertex 3
+    ${formatNum(overhangWidth/2)}, ${formatNum(y2 + depth)}, ${formatNum(windowTop)}; !- Vertex 4`;
+        break;
+      case 'east':
+        // Parede Leste (X positivo)
+        vertices = `
+    ${formatNum(x2)}, ${formatNum(-overhangWidth/2)}, ${formatNum(windowTop)},        !- Vertex 1
+    ${formatNum(x2)}, ${formatNum(overhangWidth/2)}, ${formatNum(windowTop)},         !- Vertex 2
+    ${formatNum(x2 + depth)}, ${formatNum(overhangWidth/2)}, ${formatNum(windowTop)}, !- Vertex 3
+    ${formatNum(x2 + depth)}, ${formatNum(-overhangWidth/2)}, ${formatNum(windowTop)};!- Vertex 4`;
+        break;
+      case 'west':
+        // Parede Oeste (X negativo)
+        vertices = `
+    ${formatNum(x1)}, ${formatNum(overhangWidth/2)}, ${formatNum(windowTop)},         !- Vertex 1
+    ${formatNum(x1)}, ${formatNum(-overhangWidth/2)}, ${formatNum(windowTop)},        !- Vertex 2
+    ${formatNum(x1 - depth)}, ${formatNum(-overhangWidth/2)}, ${formatNum(windowTop)},!- Vertex 3
+    ${formatNum(x1 - depth)}, ${formatNum(overhangWidth/2)}, ${formatNum(windowTop)}; !- Vertex 4`;
+        break;
+    }
+
+    return `
+! Overhang for Window ${wallInfo.orientation.charAt(0).toUpperCase() + wallInfo.orientation.slice(1)}
+Shading:Zone:Detailed,
+   Overhang ${wallInfo.orientation.charAt(0).toUpperCase() + wallInfo.orientation.slice(1)}, !- Name
+   Zone Default,                                  !- Base Surface
+   ,                                              !- Transmittance Schedule Name  
+   4,                                             !- Number of Vertices${vertices}
+`;
   };
 
   // Função para gerar uma janela se ela estiver habilitada
@@ -410,7 +479,7 @@ BuildingSurface:Detailed,                        !- Surface
     ${formatNum(x2)}, ${formatNum(y2)}, ${formatNum(z1)},  !- Vertex 2
     ${formatNum(x2)}, ${formatNum(y2)}, ${formatNum(z2)},  !- Vertex 3
     ${formatNum(x1)}, ${formatNum(y2)}, ${formatNum(z2)};  !- Vertex 4
-${generateWindow('window-1')}
+${generateWindow('window-1')}${generateOverhang('window-1')}
 ! Wall North (Y negative)
 BuildingSurface:Detailed,                        !- Surface
    Wall North,                                    !- Surface name
@@ -425,7 +494,7 @@ BuildingSurface:Detailed,                        !- Surface
     ${formatNum(x1)}, ${formatNum(y1)}, ${formatNum(z1)},  !- Vertex 2
     ${formatNum(x1)}, ${formatNum(y1)}, ${formatNum(z2)},  !- Vertex 3
     ${formatNum(x2)}, ${formatNum(y1)}, ${formatNum(z2)};  !- Vertex 4
-${generateWindow('window-2')}
+${generateWindow('window-2')}${generateOverhang('window-2')}
 
 ! Wall East (X positive)
 BuildingSurface:Detailed,                        !- Surface
@@ -441,7 +510,7 @@ BuildingSurface:Detailed,                        !- Surface
     ${formatNum(x2)}, ${formatNum(y2)}, ${formatNum(z1)},  !- Vertex 2
     ${formatNum(x2)}, ${formatNum(y2)}, ${formatNum(z2)},  !- Vertex 3
     ${formatNum(x2)}, ${formatNum(y1)}, ${formatNum(z2)};  !- Vertex 4
-${generateWindow('window-3')}
+${generateWindow('window-3')}${generateOverhang('window-3')}
 ! Wall West (X negative)
 BuildingSurface:Detailed,                        !- Surface
    Wall West,                                     !- Surface name
@@ -456,7 +525,7 @@ BuildingSurface:Detailed,                        !- Surface
     ${formatNum(x1)}, ${formatNum(y1)}, ${formatNum(z1)},  !- Vertex 2
     ${formatNum(x1)}, ${formatNum(y1)}, ${formatNum(z2)},  !- Vertex 3
     ${formatNum(x1)}, ${formatNum(y2)}, ${formatNum(z2)};  !- Vertex 4
-${generateWindow('window-4')}
+${generateWindow('window-4')}${generateOverhang('window-4')}
 
 ! Outputs
 Output:Variable, *, Zone Mean Air Temperature, hourly, ;
