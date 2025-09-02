@@ -17,10 +17,17 @@ const MainContent = styled.div`
   display: flex;
   flex: 1;
   overflow: hidden;
+  min-height: 0;
+  width: 100%;
 `;
 
 const LeftPanelContainer = styled.div`
-  width: 250px;
+  width: 250px !important;
+  min-width: 250px !important;
+  max-width: 250px !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  flex-basis: 250px !important;
   height: 100%;
   background-color: #fff;
   border-right: 1px solid #e0e0e0;
@@ -31,12 +38,19 @@ const LeftPanelContainer = styled.div`
 
 const CanvasContainer = styled.div`
   flex: 1;
+  min-width: 0;
   position: relative;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  overflow: hidden;
 `;
 
 const RightPanelContainer = styled.div`
-  width: 300px;
+  width: 300px !important;
+  min-width: 300px !important;
+  max-width: 300px !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  flex-basis: 300px !important;
   height: 100%;
   background-color: #fff;
   border-left: 1px solid #e0e0e0;
