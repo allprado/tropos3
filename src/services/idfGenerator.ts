@@ -108,60 +108,22 @@ export const generateIdf = (
       return '';
     }
 
-    const { width: windowWidth, height: windowHeight, sillHeight } = windowData;
+    const { height: windowHeight } = windowData;
     const { depth, extensionLeft, extensionRight } = overhangData;
     
-    // Altura do topo da janela
-    const windowTop = sillHeight + windowHeight;
+    // Calcular a fração da profundidade em relação à altura da janela
+    const depthFraction = depth / windowHeight;
     
-    // Largura total do overhang (janela + extensões)
-    const overhangWidth = windowWidth + extensionLeft + extensionRight;
-    
-    // Calcular vértices do overhang baseado na orientação da parede
-    let vertices = '';
-    
-    switch (wallInfo.orientation) {
-      case 'south':
-        // Parede Sul (Y negativo)
-        vertices = `
-    ${formatNum(-overhangWidth/2)}, ${formatNum(y1)}, ${formatNum(windowTop)},        !- Vertex 1
-    ${formatNum(overhangWidth/2)}, ${formatNum(y1)}, ${formatNum(windowTop)},         !- Vertex 2
-    ${formatNum(overhangWidth/2)}, ${formatNum(y1 - depth)}, ${formatNum(windowTop)}, !- Vertex 3
-    ${formatNum(-overhangWidth/2)}, ${formatNum(y1 - depth)}, ${formatNum(windowTop)};!- Vertex 4`;
-        break;
-      case 'north':
-        // Parede Norte (Y positivo)
-        vertices = `
-    ${formatNum(overhangWidth/2)}, ${formatNum(y2)}, ${formatNum(windowTop)},         !- Vertex 1
-    ${formatNum(-overhangWidth/2)}, ${formatNum(y2)}, ${formatNum(windowTop)},        !- Vertex 2
-    ${formatNum(-overhangWidth/2)}, ${formatNum(y2 + depth)}, ${formatNum(windowTop)},!- Vertex 3
-    ${formatNum(overhangWidth/2)}, ${formatNum(y2 + depth)}, ${formatNum(windowTop)}; !- Vertex 4`;
-        break;
-      case 'east':
-        // Parede Leste (X positivo)
-        vertices = `
-    ${formatNum(x2)}, ${formatNum(-overhangWidth/2)}, ${formatNum(windowTop)},        !- Vertex 1
-    ${formatNum(x2)}, ${formatNum(overhangWidth/2)}, ${formatNum(windowTop)},         !- Vertex 2
-    ${formatNum(x2 + depth)}, ${formatNum(overhangWidth/2)}, ${formatNum(windowTop)}, !- Vertex 3
-    ${formatNum(x2 + depth)}, ${formatNum(-overhangWidth/2)}, ${formatNum(windowTop)};!- Vertex 4`;
-        break;
-      case 'west':
-        // Parede Oeste (X negativo)
-        vertices = `
-    ${formatNum(x1)}, ${formatNum(overhangWidth/2)}, ${formatNum(windowTop)},         !- Vertex 1
-    ${formatNum(x1)}, ${formatNum(-overhangWidth/2)}, ${formatNum(windowTop)},        !- Vertex 2
-    ${formatNum(x1 - depth)}, ${formatNum(-overhangWidth/2)}, ${formatNum(windowTop)},!- Vertex 3
-    ${formatNum(x1 - depth)}, ${formatNum(overhangWidth/2)}, ${formatNum(windowTop)}; !- Vertex 4`;
-        break;
-    }
-
     return `
 ! Overhang for Window ${wallInfo.orientation.charAt(0).toUpperCase() + wallInfo.orientation.slice(1)}
-Shading:Zone:Detailed,
+Shading:Overhang:Projection,
    Overhang ${wallInfo.orientation.charAt(0).toUpperCase() + wallInfo.orientation.slice(1)}, !- Name
-   Zone Default,                                  !- Base Surface
-   ,                                              !- Transmittance Schedule Name  
-   4,                                             !- Number of Vertices${vertices}
+   Window ${wallInfo.orientation.charAt(0).toUpperCase() + wallInfo.orientation.slice(1)}, !- Window or Door Name
+   0,                                             !- Height above Window or Door {m}
+   90,                                            !- Tilt Angle from Window/Door {deg}
+   ${formatNum(extensionLeft)},                   !- Left extension from Window/Door Width {m}
+   ${formatNum(extensionRight)},                  !- Right extension from Window/Door Width {m}
+   ${formatNum(depthFraction)};                   !- Depth as a Fraction of Window/Door Height
 `;
   };
 
