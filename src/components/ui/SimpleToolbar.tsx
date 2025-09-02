@@ -1,10 +1,9 @@
 import styled from 'styled-components';
+import { useRef } from 'react';
 import { 
   BiDownload, 
-  BiExport, 
   BiRun, 
-  BiCompass, 
-  BiReset
+  BiUpload
 } from 'react-icons/bi';
 import { useStore } from '../../store-simple';
 
@@ -62,34 +61,47 @@ const ToolButton = styled.button<ToolButtonProps>`
   }
 `;
 
-const NorthAngleControl = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-right: 1rem;
-`;
-
-const AngleInput = styled.input`
-  width: 60px;
-  padding: 0.4rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  
-  &:focus {
-    outline: none;
-    border-color: #4a87b9;
-    box-shadow: 0 0 0 2px rgba(74, 135, 185, 0.2);
-  }
-`;
-
 const SimpleToolbar = () => {
-  const { northAngle, setNorthAngle, resetModel, exportToJson, exportToIdf, runSimulation } = useStore();
+  const { exportToJson, importFromJson, exportToIdf, runSimulation } = useStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const handleNorthAngleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value);
-    if (!isNaN(value)) {
-      setNorthAngle(value * (Math.PI / 180)); // Converter para radianos
+  // Função para trigger file input diretamente
+  const handleImportClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''; // Resetar valor para permitir seleção do mesmo arquivo
+      fileInputRef.current.click();
+    }
+  };
+  
+  // Função para lidar com o arquivo importado (com confirmação no momento da seleção)
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const confirmLoad = window.confirm(
+        '⚠️ ATENÇÃO: Ao carregar este modelo, todas as configurações atuais serão perdidas.\n\n' +
+        `Arquivo selecionado: ${file.name}\n\n` +
+        'Deseja continuar com o carregamento?'
+      );
+      
+      if (!confirmLoad) {
+        // Resetar o input se usuário cancelar
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const content = event.target?.result as string;
+        try {
+          const data = JSON.parse(content);
+          importFromJson(data);
+        } catch (error) {
+          alert('Erro ao importar arquivo: Formato inválido');
+        }
+      };
+      reader.readAsText(file);
     }
   };
   
@@ -99,29 +111,26 @@ const SimpleToolbar = () => {
         Tropos<span>3D</span>
       </Logo>
       
-      <NorthAngleControl>
-        <BiCompass size={18} />
-        <AngleInput 
-          type="number" 
-          value={Math.round(northAngle * (180 / Math.PI))} 
-          onChange={handleNorthAngleChange}
-          step="5"
-          title="Ângulo do Norte (graus)"
-        />
-      </NorthAngleControl>
-      
       <ButtonGroup>
-        <ToolButton onClick={resetModel} title="Reiniciar Modelo">
-          <BiReset />
+        <ToolButton onClick={handleImportClick} title="Carregar Modelo JSON (substitui o atual)">
+          <BiUpload />
+          Carregar Modelo
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleFileUpload}
+            style={{ display: 'none' }}
+          />
         </ToolButton>
         
         <ToolButton onClick={exportToJson} title="Exportar para JSON">
           <BiDownload />
-          JSON
+          Salvar Modelo
         </ToolButton>
         
         <ToolButton onClick={exportToIdf} title="Exportar para IDF (EnergyPlus)">
-          <BiExport />
+          <BiDownload />
           IDF
         </ToolButton>
         

@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Grid } from '@react-three/drei';
+import { OrbitControls, Grid, Html } from '@react-three/drei';
 import { Suspense } from 'react';
 import BasicZone from './BasicZone';
 import BasicNorthIndicator from './BasicNorthIndicator';
@@ -68,8 +68,55 @@ const BasicCanvas3D = () => {
             fadeStrength={0.5}
           />
           
-          {/* Eixos coordenados */}
-          <axesHelper args={[5]} />
+          {/* Sistema de coordenadas CAD customizado */}
+          <group position={[-8, 0, 8]}>
+            {/* Eixo X - Leste (Vermelho) */}
+            <group>
+              <mesh position={[0.75, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
+                <cylinderGeometry args={[0.02, 0.02, 1.5]} />
+                <meshBasicMaterial color="#ff0000" />
+              </mesh>
+              <mesh position={[1.6, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
+                <coneGeometry args={[0.08, 0.2]} />
+                <meshBasicMaterial color="#ff0000" />
+              </mesh>
+            </group>
+            
+            {/* Eixo Y - Norte (Verde) - Z negativo no Three.js */}
+            <group>
+              <mesh position={[0, 0, -0.75]} rotation={[Math.PI / 2, 0, 0]}>
+                <cylinderGeometry args={[0.02, 0.02, 1.5]} />
+                <meshBasicMaterial color="#00ff00" />
+              </mesh>
+              <mesh position={[0, 0, -1.6]} rotation={[Math.PI / 2, 0, 0]}>
+                <coneGeometry args={[0.08, 0.2]} />
+                <meshBasicMaterial color="#00ff00" />
+              </mesh>
+            </group>
+            
+            {/* Eixo Z - Cima (Azul) - Y positivo no Three.js */}
+            <group>
+              <mesh position={[0, 0.75, 0]}>
+                <cylinderGeometry args={[0.02, 0.02, 1.5]} />
+                <meshBasicMaterial color="#0000ff" />
+              </mesh>
+              <mesh position={[0, 1.6, 0]}>
+                <coneGeometry args={[0.08, 0.2]} />
+                <meshBasicMaterial color="#0000ff" />
+              </mesh>
+            </group>
+            
+            {/* Labels dos eixos */}
+            <Html position={[2, 0, 0]} center>
+              <div style={{ color: '#ff0000', fontWeight: 'bold', fontSize: '0.8rem' }}>X</div>
+            </Html>
+            <Html position={[0, 0, -2]} center>
+              <div style={{ color: '#00ff00', fontWeight: 'bold', fontSize: '0.8rem' }}>Y</div>
+            </Html>
+            <Html position={[0, 2, 0]} center>
+              <div style={{ color: '#0000ff', fontWeight: 'bold', fontSize: '0.8rem' }}>Z</div>
+            </Html>
+          </group>
           
           {/* Indicador do Norte */}
           <BasicNorthIndicator />

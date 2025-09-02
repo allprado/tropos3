@@ -5,15 +5,24 @@ const BasicNorthIndicator = () => {
   const { northAngle } = useStore();
   
   return (
-    <group position={[0, 0, 0]} rotation={[0, northAngle, 0]}>
-      {/* Linha magenta indicando o norte */}
-      <mesh position={[0, 0, -5]}>
-        <cylinderGeometry args={[0.05, 0.05, 10]} />
-        <meshBasicMaterial color="#ff00ff" />
-      </mesh>
+    <group position={[0, 0, 0]} rotation={[0, -northAngle, 0]}>
+      {/* Seta horizontal apontando para o norte (Z negativo) */}
+      <group>
+        {/* Haste da seta */}
+        <mesh position={[0, 0, -4]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.05, 0.05, 6]} />
+          <meshBasicMaterial color="#ff00ff" />
+        </mesh>
+        
+        {/* Ponta da seta - corrigida para apontar na direção certa */}
+        <mesh position={[0, 0, -7]} rotation={[-Math.PI / 2, 0, 0]}>
+          <coneGeometry args={[0.2, 0.8]} />
+          <meshBasicMaterial color="#ff00ff" />
+        </mesh>
+      </group>
       
       {/* Label do Norte */}
-      <Html position={[0, 0.5, -10]} center>
+      <Html position={[0, 0.5, -8]} center>
         <div style={{ 
           color: '#ff00ff', 
           fontWeight: 'bold', 

@@ -203,12 +203,16 @@ export const useStore = create<Store>((set, get) => ({
   }),
   
   exportToJson: () => {
-    const { dimensions, northAngle, materials } = get();
+    const { dimensions, northAngle, materials, building, windowDimensions, overhangProperties, surfaceProperties } = get();
     
     const model = {
       dimensions,
       northAngle,
-      materials
+      materials,
+      building,
+      windowDimensions,
+      overhangProperties,
+      surfaceProperties
     };
     
     // Converte para JSON e faz download
@@ -230,8 +234,13 @@ export const useStore = create<Store>((set, get) => ({
           dimensions: data.dimensions,
           northAngle: data.northAngle || 0,
           materials: data.materials || initialMaterials,
+          building: data.building || initialBuilding,
+          windowDimensions: data.windowDimensions || initialWindowDimensions,
+          overhangProperties: data.overhangProperties || initialOverhangProperties,
+          surfaceProperties: data.surfaceProperties || initialSurfaceProperties,
           selectedElement: null
         });
+        console.log('✅ Modelo importado com sucesso');
       }
     } catch (error) {
       console.error('Erro ao importar modelo:', error);

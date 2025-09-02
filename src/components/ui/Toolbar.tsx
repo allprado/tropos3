@@ -4,8 +4,6 @@ import {
   BiUpload, 
   BiExport, 
   BiRun, 
-  BiCompass, 
-  BiReset,
   BiCode
 } from 'react-icons/bi';
 import { useStore } from '../../store';
@@ -65,45 +63,25 @@ const ToolButton = styled.button<ToolButtonProps>`
   }
 `;
 
-const NorthAngleControl = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-right: 1rem;
-`;
-
-const AngleInput = styled.input`
-  width: 60px;
-  padding: 0.4rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  
-  &:focus {
-    outline: none;
-    border-color: #4a87b9;
-    box-shadow: 0 0 0 2px rgba(74, 135, 185, 0.2);
-  }
-`;
-
 const Toolbar = () => {
-  const { northAngle, setNorthAngle, resetModel, exportToJson, importFromJson, exportToIdf, runSimulation } = useStore();
+  const { exportToJson, importFromJson, exportToIdf, runSimulation } = useStore();
   
-  const handleNorthAngleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value);
-    if (!isNaN(value)) {
-      setNorthAngle(value * (Math.PI / 180)); // Converter para radianos
-    }
-  };
   
   const handleTestIdf = () => {
     console.log('🧪 Iniciando teste do gerador IDF...');
     testIdfGenerator();
   };
   
-  // Função para trigger file input para importação
+  // Função para trigger file input para importação com confirmação
   const handleImportClick = () => {
-    document.getElementById('file-upload')?.click();
+    const confirmLoad = window.confirm(
+      '⚠️ ATENÇÃO: Ao carregar um novo modelo, todas as configurações atuais serão perdidas.\n\n' +
+      'Deseja continuar com o carregamento?'
+    );
+    
+    if (confirmLoad) {
+      document.getElementById('file-upload')?.click();
+    }
   };
   
   // Função para lidar com o arquivo importado
@@ -130,28 +108,10 @@ const Toolbar = () => {
         Tropos<span>3D</span>
       </Logo>
       
-  <NorthAngleControl>
-    <BiCompass size={18} />
-    <AngleInput 
-      type="number" 
-      value={Math.round(northAngle * (180 / Math.PI))} 
-      onChange={handleNorthAngleChange}
-      step="5"
-      title="Ângulo do Norte (graus)"
-    />
-  </NorthAngleControl>      <ButtonGroup>
-        <ToolButton onClick={resetModel} title="Reiniciar Modelo">
-          <BiReset />
-        </ToolButton>
-        
-        <ToolButton onClick={exportToJson} title="Exportar para JSON">
-          <BiDownload />
-          JSON
-        </ToolButton>
-        
-        <ToolButton onClick={handleImportClick} title="Importar de JSON">
+      <ButtonGroup>
+        <ToolButton onClick={handleImportClick} title="Carregar Modelo JSON (substitui o atual)">
           <BiUpload />
-          Importar
+          Carregar Modelo
           <input
             id="file-upload"
             type="file"
@@ -159,6 +119,11 @@ const Toolbar = () => {
             onChange={handleFileUpload}
             style={{ display: 'none' }}
           />
+        </ToolButton>
+        
+        <ToolButton onClick={exportToJson} title="Exportar para JSON">
+          <BiDownload />
+          Salvar JSON
         </ToolButton>
         
         <ToolButton onClick={exportToIdf} title="Exportar para IDF (EnergyPlus)">

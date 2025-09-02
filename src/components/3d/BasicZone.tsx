@@ -38,7 +38,7 @@ const BasicZone = ({ position = [0, 0, 0] }: BasicZoneProps) => {
   
   const isSelected = (id: string) => selectedElement?.id === id;
   const getSelectionColor = (id: string, hoverColor: string, defaultColor: string) => {
-    if (isSelected(id)) return "#ff0000"; // Cor vermelha bem visível para seleção
+    if (isSelected(id)) return "#FF6B35"; // Cor alaranjada para seleção
     if (hovered === id) return hoverColor;
     
     // Verificar se a superfície é adiabática
@@ -163,7 +163,7 @@ const BasicZone = ({ position = [0, 0, 0] }: BasicZoneProps) => {
           >
             <boxGeometry args={[windowDimensions['window-1']?.width || 1.5, windowDimensions['window-1']?.height || 1.1, 0.001]} />
             <meshPhysicalMaterial 
-              color={getSelectionColor('window-1', "#87ceeb", "#4682b4")}
+              color={getSelectionColor('window-1', "#B8E6FF", "#87CEEB")}
               transparent 
               opacity={0.6}
               roughness={0}
@@ -185,7 +185,7 @@ const BasicZone = ({ position = [0, 0, 0] }: BasicZoneProps) => {
                 0.1,
                 overhangProperties['window-1']?.depth || 0.5
               ]} />
-              <meshStandardMaterial color="#cccccc" />
+              <meshStandardMaterial color="#4CAF50" />
             </mesh>
           )}
         </>
@@ -203,7 +203,7 @@ const BasicZone = ({ position = [0, 0, 0] }: BasicZoneProps) => {
           >
             <boxGeometry args={[windowDimensions['window-2']?.width || 1.5, windowDimensions['window-2']?.height || 1.1, 0.001]} />
             <meshPhysicalMaterial 
-              color={getSelectionColor('window-2', "#87ceeb", "#4682b4")}
+              color={getSelectionColor('window-2', "#B8E6FF", "#87CEEB")}
               transparent 
               opacity={0.6}
               roughness={0}
@@ -225,7 +225,7 @@ const BasicZone = ({ position = [0, 0, 0] }: BasicZoneProps) => {
                 0.1,
                 overhangProperties['window-2']?.depth || 0.5
               ]} />
-              <meshStandardMaterial color="#cccccc" />
+              <meshStandardMaterial color="#4CAF50" />
             </mesh>
           )}
         </>
@@ -243,7 +243,7 @@ const BasicZone = ({ position = [0, 0, 0] }: BasicZoneProps) => {
           >
             <boxGeometry args={[windowDimensions['window-3']?.width || 1.5, windowDimensions['window-3']?.height || 1.1, 0.001]} />
             <meshPhysicalMaterial 
-              color={getSelectionColor('window-3', "#87ceeb", "#4682b4")}
+              color={getSelectionColor('window-3', "#B8E6FF", "#87CEEB")}
               transparent 
               opacity={0.6}
               roughness={0}
@@ -266,7 +266,7 @@ const BasicZone = ({ position = [0, 0, 0] }: BasicZoneProps) => {
                 0.1,
                 overhangProperties['window-3']?.depth || 0.5
               ]} />
-              <meshStandardMaterial color="#cccccc" />
+              <meshStandardMaterial color="#4CAF50" />
             </mesh>
           )}
         </>
@@ -284,7 +284,7 @@ const BasicZone = ({ position = [0, 0, 0] }: BasicZoneProps) => {
           >
             <boxGeometry args={[windowDimensions['window-4']?.width || 1.5, windowDimensions['window-4']?.height || 1.1, 0.001]} />
             <meshPhysicalMaterial 
-              color={getSelectionColor('window-4', "#87ceeb", "#4682b4")}
+              color={getSelectionColor('window-4', "#B8E6FF", "#87CEEB")}
               transparent 
               opacity={0.6}
               roughness={0}
@@ -307,7 +307,7 @@ const BasicZone = ({ position = [0, 0, 0] }: BasicZoneProps) => {
                 0.1,
                 overhangProperties['window-4']?.depth || 0.5
               ]} />
-              <meshStandardMaterial color="#cccccc" />
+              <meshStandardMaterial color="#4CAF50" />
             </mesh>
           )}
         </>
