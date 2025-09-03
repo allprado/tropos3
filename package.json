@@ -12,7 +12,7 @@
     "start": "npm run server",
     "vercel-build": "npm run build",
     "server:build": "tsc server/index.ts --outDir dist/server --module commonjs --target es2018",
-    "render-build": "npm run build && chmod +x scripts/install-energyplus-render.sh && ./scripts/install-energyplus-render.sh"
+    "render-build": "npm run build && chmod +x scripts/install-energyplus-alt.sh && sudo ./scripts/install-energyplus-alt.sh"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.4",

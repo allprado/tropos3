@@ -3,33 +3,33 @@
 
 set -e
 
-echo "🔧 Iniciando instalação do EnergyPlus..."
+echo "🔧 Iniciando instalação do EnergyPlus 8.9.0..."
 
 # Diretório temporário
 cd /tmp
 
-# Baixar EnergyPlus 22.2.0 (versão compatível com Ubuntu)
-echo "📥 Baixando EnergyPlus 22.2.0..."
-wget -q https://github.com/NREL/EnergyPlus/releases/download/v22.2.0/EnergyPlus-22.2.0-c249759bad-Linux-Ubuntu20.04-x86_64.sh
+# Baixar EnergyPlus 8.9.0
+echo "📥 Baixando EnergyPlus 8.9.0..."
+wget -q https://github.com/NREL/EnergyPlus/releases/download/v8.9.0/EnergyPlus-8.9.0-40101eaafd-Linux-x86_64.sh
 
 # Tornar o instalador executável
-chmod +x EnergyPlus-22.2.0-c249759bad-Linux-Ubuntu20.04-x86_64.sh
+chmod +x EnergyPlus-8.9.0-40101eaafd-Linux-x86_64.sh
 
 # Instalar EnergyPlus aceitando a licença automaticamente
 echo "🚀 Instalando EnergyPlus..."
-echo "y" | ./EnergyPlus-22.2.0-c249759bad-Linux-Ubuntu20.04-x86_64.sh --prefix=/usr/local
+echo "y" | ./EnergyPlus-8.9.0-40101eaafd-Linux-x86_64.sh --prefix=/usr/local
 
 # Criar links simbólicos
 echo "🔗 Criando links simbólicos..."
-ln -sf /usr/local/EnergyPlus-22-2-0/energyplus /usr/local/bin/energyplus
-ln -sf /usr/local/EnergyPlus-22-2-0/ExpandObjects /usr/local/bin/ExpandObjects
+ln -sf /usr/local/EnergyPlus-8-9-0/energyplus-8.9.0 /usr/local/bin/energyplus
+ln -sf /usr/local/EnergyPlus-8-9-0/ExpandObjects /usr/local/bin/ExpandObjects
 
 # Verificar instalação
 echo "✅ Verificando instalação..."
-if [ -f "/usr/local/EnergyPlus-22-2-0/energyplus" ]; then
-    echo "🎉 EnergyPlus instalado com sucesso!"
-    echo "📍 Localização: /usr/local/EnergyPlus-22-2-0/"
-    /usr/local/EnergyPlus-22-2-0/energyplus --version
+if [ -f "/usr/local/EnergyPlus-8-9-0/energyplus-8.9.0" ]; then
+    echo "🎉 EnergyPlus 8.9.0 instalado com sucesso!"
+    echo "📍 Localização: /usr/local/EnergyPlus-8-9-0/"
+    /usr/local/EnergyPlus-8-9-0/energyplus-8.9.0 --version
 else
     echo "❌ Falha na instalação do EnergyPlus"
     exit 1

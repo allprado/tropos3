@@ -62,11 +62,12 @@ const SIMULATIONS_DIR = path.join(TEMP_DIR, 'simulations');
 
 // Tentar encontrar EnergyPlus em diferentes localizações
 const ENERGYPLUS_PATHS = [
+  process.env.ENERGYPLUS_PATH,
   '/usr/local/EnergyPlus-8-9-0/energyplus-8.9.0',
   '/usr/local/bin/energyplus',
   '/usr/bin/energyplus',
   '/usr/local/EnergyPlus-22-2-0/energyplus'
-];
+].filter(Boolean); // Remove valores undefined
 
 const ENERGYPLUS_PATH = ENERGYPLUS_PATHS.find(path => fs.existsSync(path)) || ENERGYPLUS_PATHS[0];
 

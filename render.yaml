@@ -1,13 +1,17 @@
 services:
   - type: web
     name: tropos3
-    env: node
+    env: docker
     plan: free
-    buildCommand: npm run build
-    startCommand: npm run server
     healthCheckPath: /api/health
+    disk:
+      name: tropos3-disk
+      mountPath: /tmp
+      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 3001
+      - key: ENERGYPLUS_PATH
+        value: /usr/local/EnergyPlus-8-9-0/energyplus-8.9.0
