@@ -1,6 +1,6 @@
 {
   "name": "Tropos3D",
-  "dockerFile": "Dockerfile",
+  "dockerFile": "../Dockerfile",
   "forwardPorts": [5173],
   "portsAttributes": {
     "5173": {
