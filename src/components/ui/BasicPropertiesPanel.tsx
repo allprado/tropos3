@@ -9,6 +9,16 @@ import {
   BiRuler
 } from 'react-icons/bi';
 
+// Lista de arquivos EPW disponíveis
+const AVAILABLE_EPW_FILES = [
+  { value: 'BRA_AM_Manaus-Gomes.Intl.AP.821110_TMYx.2009-2023.epw', label: 'Manaus - AM' },
+  { value: 'BRA_CE_Fortaleza.817580_TMYx.2009-2023.epw', label: 'Fortaleza - CE' },
+  { value: 'BRA_DF_Brasilia.867150_TMYx.2009-2023.epw', label: 'Brasília - DF' },
+  { value: 'BRA_RJ_Rio.de.Janeiro-Santos.Dumont.AP.837550_TMYx.2009-2023.epw', label: 'Rio de Janeiro - RJ' },
+  { value: 'BRA_RS_Porto.Alegre.869880_TMYx.2009-2023.epw', label: 'Porto Alegre - RS' },
+  { value: 'BRA_SP_Sao.Paulo-Congonhas.AP.837800_TMYx.2009-2023.epw', label: 'São Paulo - SP' }
+];
+
 const PanelContainer = styled.div`
   flex: 1;
   overflow-y: auto;
@@ -117,6 +127,7 @@ const BasicPropertiesPanel = () => {
     setBuildingName,
     setBuildingEpwFile,
     setBuildingLocationData,
+    setBuildingSelectedEpw,
     zone,
     setZoneName,
     setZoneConditioned
@@ -176,6 +187,39 @@ const BasicPropertiesPanel = () => {
       reader.readAsText(file);
     } else {
       alert('Por favor, selecione um arquivo .epw válido');
+    }
+  };
+
+  const handleEpwSelectionChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedFileName = e.target.value;
+    setBuildingSelectedEpw(selectedFileName);
+    
+    // Se mudou a seleção, limpar o arquivo customizado para dar prioridade à seleção
+    if (building.epwFile) {
+      setBuildingEpwFile(null);
+      setBuildingLocationData(null);
+    }
+    
+    // Tentar carregar dados de localização do arquivo EPW selecionado
+    try {
+      const response = await fetch(`/epw/${selectedFileName}`);
+      if (response.ok) {
+        const epwContent = await response.text();
+        // Importar a função parseEpwLocation dinamicamente
+        const { parseEpwLocation } = await import('../../services/idfGenerator');
+        const locationData = parseEpwLocation(epwContent);
+        
+        if (locationData) {
+          setBuildingLocationData(locationData);
+          console.log('Dados de localização carregados do EPW selecionado:', locationData);
+        } else {
+          console.warn('Não foi possível extrair dados de localização do arquivo EPW selecionado');
+        }
+      } else {
+        console.error('Erro ao carregar arquivo EPW selecionado:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar arquivo EPW selecionado:', error);
     }
   };
 
@@ -343,7 +387,35 @@ const BasicPropertiesPanel = () => {
         {selectedElement.type === 'building' && (
           <>
             <PropertyRow>
-              <PropertyLabel>Arquivo EPW:</PropertyLabel>
+              <PropertyLabel>Cidade:</PropertyLabel>
+              <PropertySelect
+                value={building.selectedEpw}
+                onChange={handleEpwSelectionChange}
+              >
+                {AVAILABLE_EPW_FILES.map(epw => (
+                  <option key={epw.value} value={epw.value}>
+                    {epw.label}
+                  </option>
+                ))}
+              </PropertySelect>
+            </PropertyRow>
+            
+            {!building.epwFile && (
+              <div style={{ 
+                fontSize: '0.8rem', 
+                color: '#17a2b8', 
+                marginBottom: '0.5rem',
+                padding: '0.5rem',
+                backgroundColor: '#e7f3ff',
+                borderRadius: '4px',
+                border: '1px solid #bee5eb'
+              }}>
+                ℹ️ Usando: {AVAILABLE_EPW_FILES.find(epw => epw.value === building.selectedEpw)?.label}
+              </div>
+            )}
+            
+            <PropertyRow>
+              <PropertyLabel>Ou Arquivo EPW Customizado:</PropertyLabel>
               <div style={{ width: '60%' }}>
                 <FileInput 
                   type="file" 
@@ -354,9 +426,16 @@ const BasicPropertiesPanel = () => {
                   <div style={{ 
                     fontSize: '0.8rem', 
                     color: '#28a745', 
-                    marginTop: '0.3rem' 
+                    marginTop: '0.3rem',
+                    padding: '0.5rem',
+                    backgroundColor: '#d4edda',
+                    borderRadius: '4px',
+                    border: '1px solid #c3e6cb'
                   }}>
                     📁 {building.epwFile.name}
+                    <div style={{ fontSize: '0.7rem', color: '#155724', marginTop: '0.2rem' }}>
+                      (sobrescreve seleção de cidade)
+                    </div>
                   </div>
                 )}
               </div>

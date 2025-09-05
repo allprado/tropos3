@@ -38,6 +38,7 @@ interface Building {
   name: string;
   epwFile: File | null;
   locationData: LocationData | null;
+  selectedEpw: string; // Nome do arquivo EPW selecionado da pasta
 }
 
 interface Zone {
@@ -77,6 +78,7 @@ interface Store {
   setBuildingName: (name: string) => void;
   setBuildingEpwFile: (file: File | null) => void;
   setBuildingLocationData: (locationData: LocationData | null) => void;
+  setBuildingSelectedEpw: (epwFileName: string) => void;
   setZoneName: (name: string) => void;
   setZoneConditioned: (conditioned: boolean) => void;
   
@@ -113,7 +115,8 @@ const initialMaterials = {
 const initialBuilding = {
   name: 'Novo Edifício',
   epwFile: null,
-  locationData: null
+  locationData: null,
+  selectedEpw: 'BRA_CE_Fortaleza.817580_TMYx.2009-2023.epw' // Default para Fortaleza
 };
 
 const initialZone = {
@@ -181,6 +184,7 @@ export const useStore = create<Store>((set, get) => ({
   setBuildingName: (name) => set({ building: { ...get().building, name } }),
   setBuildingEpwFile: (file) => set({ building: { ...get().building, epwFile: file } }),
   setBuildingLocationData: (locationData) => set({ building: { ...get().building, locationData } }),
+  setBuildingSelectedEpw: (epwFileName) => set({ building: { ...get().building, selectedEpw: epwFileName } }),
   setZoneName: (name) => set({ zone: { ...get().zone, name } }),
   setZoneConditioned: (conditioned) => set({ zone: { ...get().zone, conditioned } }),
   
@@ -288,11 +292,27 @@ export const useStore = create<Store>((set, get) => ({
       // Preparar arquivo EPW se disponível
       let epwFile: File | undefined;
       if (building.epwFile) {
-        // Usar o arquivo EPW carregado pelo usuário
+        // Usar o arquivo EPW carregado pelo usuário (prioridade)
         epwFile = building.epwFile;
         console.log('📁 Usando arquivo EPW do usuário:', epwFile.name);
-      } else {
-        console.warn('⚠️ Nenhum arquivo EPW fornecido pelo usuário');
+      } else if (building.selectedEpw) {
+        // Usar arquivo EPW selecionado da lista
+        try {
+          const response = await fetch(`/epw/${building.selectedEpw}`);
+          if (response.ok) {
+            const epwContent = await response.text();
+            epwFile = new File([epwContent], building.selectedEpw, { type: 'text/plain' });
+            console.log('📁 Usando arquivo EPW da seleção:', building.selectedEpw);
+          } else {
+            console.error('❌ Erro ao carregar arquivo EPW selecionado:', response.statusText);
+          }
+        } catch (error) {
+          console.error('❌ Erro ao buscar arquivo EPW selecionado:', error);
+        }
+      }
+      
+      if (!epwFile) {
+        console.warn('⚠️ Nenhum arquivo EPW disponível - usando arquivo padrão do servidor');
       }
 
       // Iniciar simulação
